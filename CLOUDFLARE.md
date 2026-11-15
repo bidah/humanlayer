@@ -316,7 +316,7 @@ re-bootstrap after a restart. Details: [apps/cf-hosts/README.md](apps/cf-hosts/R
 | TTL | default 24 h, up to 30 days; a watchdog destroys it at expiry | same; enforced by Daytona | default 24 h, at most 24 h (1 h on E2B's Hobby plan) |
 | Idle behaviour | kept alive until expiry | never auto-stops | killed by E2B at the timeout |
 | Restart after a platform stop | re-bootstraps from stored inputs | not handled (host shows as stopped) | not handled |
-| Status | verified: create, bootstrap, ready via daemon heartbeat, logs, destroy, token revocation, reconcile; also driven once from the web app in a browser (create, ready, host selectable in the launcher, logs, delete) | verified: same, except the reconcile check (run on Cloudflare only) | implemented, **never run against the real service** |
+| Status | verified: create, bootstrap, ready via daemon heartbeat, logs, destroy, token revocation, reconcile, session dispatch and agent start, Claude sign-in URL (see [Sessions on a cloud host](#sessions-on-a-cloud-host)); also driven once from the web app in a browser (create, ready, host selectable in the launcher, logs, delete) | verified: same, except the reconcile check (run on Cloudflare only) | implemented, **never run against the real service** |
 
 Costs that run continuously:
 
@@ -333,6 +333,45 @@ Costs that run continuously:
 The reconcile pass in `humanlayer-jobs` compares the API's host rows with the provider every
 minute: a host that disappeared (expired, deleted outside the product) is marked destroyed and
 its daemon token revoked.
+
+### Sessions on a cloud host
+
+Verified on Cloudflare and Daytona with `scripts/cloudflare/e2e/session-launch.ts`, **without any
+model credential** on the host:
+
+- **Dispatch.** A task launched the way the web app's launcher does for a directory-backed task
+  (`tasks.launchDraft`, working directory `/home/humanlayer`, which the bootstrap creates; no
+  repository, no worktree) reaches the host. The session row goes `ready_for_launch` →
+  `launching` (written by the daemon) within 3 to 8 seconds, then `running` → `ready_for_input`.
+  `wrangler tail` shows the daemon's side of it: its `/v1/sessions/<hostId>`, `/v1/tasks` and
+  `/v2/daemon/*` shapes through `humanlayer-sync` (all 200), then `sessions/update`,
+  `settings/get`, `contextShards/listEnabled`, `sessions/ensureStreamHydrated` and
+  `sessions/events/create` on `humanlayer-api` (all 200). The daemon log
+  (`hosts.cloud.logs`) shows `Marked session <id> as launching` and `Session <id> completed`.
+- **Agent start.** The daemon starts Claude Code in the working directory. Without a credential,
+  Claude Code answers the prompt with `Not logged in · Please run /login` and the run ends.
+- **What the user sees.** The session ends as `ready_for_input` (not `failed`), with no
+  `error_message`; the conversation shows the prompt and an agent message `Not logged in · Please
+  run /login`. Both events are in `conversation_events` and in the session's durable stream, read
+  through the sync proxy as the user. This is upstream daemon behaviour, unchanged here.
+- **Agent sign-in.** `providerLogin.create` with `provider: claude` (the app's Claude sign-in) is
+  picked up by the cloud host's daemon within 1 to 3 seconds: it runs `claude auth login` and puts
+  the request in `awaiting_approval` with a `https://claude.com/cai/oauth/authorize` URL in the
+  paste-a-code mode (`code=true`, redirect `https://platform.claude.com/oauth/code/callback`). The
+  check cancels the request there. Completing the sign-in (submitting the code, the daemon
+  storing the credential on the host, then a session that actually runs) was **not verified**.
+
+The check creates and destroys its own host and deletes the task, session, artifact, sign-in and
+onboarding-milestone rows it creates. Each run leaves one small orphaned session stream in
+`humanlayer-streams` (the product has no stream deletion, and the proxy only serves streams of
+existing sessions).
+
+Not verified: a session with a real credential (Claude Code doing work, tool calls, approvals,
+usage records, commits and pull requests), project-backed launches (`tasks.v2.create` with a
+managed clone of a repository), and whether a provider sign-in survives a Cloudflare host restart
+(`claude auth login` writes its credential in the sandbox's home directory, which is ephemeral
+disk and not part of the inputs the watchdog re-bootstraps from; inferred from the code, not
+tested).
 
 ## The CLI
 
@@ -415,7 +454,11 @@ their own cloud host):
 bun scripts/cloudflare/e2e/login-org-sync.ts                       # sign-in, org-scoped token, API, sync shapes
 bun scripts/cloudflare/e2e/cloud-host.ts --provider cloudflare     # or daytona, e2b
 bun scripts/cloudflare/e2e/cloud-host-reconcile.ts --provider cloudflare
+bun scripts/cloudflare/e2e/session-launch.ts --provider cloudflare # launch a session on a new host, sign-in URL
 ```
+
+`session-launch.ts` also runs `wrangler tail` on `humanlayer-api` and `humanlayer-sync` to show the
+daemon's requests (`--no-tail` skips it).
 
 Right after a deploy that included `electric`, the first sync shape request is slow while
 Electric starts (see [Known limitations](#known-limitations)).
@@ -495,9 +538,12 @@ no Stripe customer.
   every secret) is implemented but was only exercised against an existing deployment, where it
   found everything and created nothing.
 - **E2B** cloud hosts are implemented but have never been run against the real E2B service.
-- **No real agent session has run on a cloud host.** Hosts were created, bootstrapped, reported
-  ready through the daemon heartbeat, and destroyed, on Cloudflare and Daytona; no model
-  credential was available, so no Claude Code session was started on one.
+- **No agent session with a model credential has run on a cloud host.** On Cloudflare and
+  Daytona, a launched session reaches the host's daemon, which starts Claude Code; without a
+  credential the agent replies `Not logged in · Please run /login` and the session ends as
+  `ready_for_input` with no error. The in-app Claude sign-in reaches the host far enough to produce
+  the sign-in URL; completing it, and a session that does real work, were not run. See
+  [Sessions on a cloud host](#sessions-on-a-cloud-host).
 - **The auth service is a WorkOS-compatible subset.** Email and password only: no SSO or social
   login, no MFA, no email verification, no password reset, no magic links, no Admin Portal, no
   domain verification (domains stay `pending`). Passwords use PBKDF2-HMAC-SHA256 at 100,000
