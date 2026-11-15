@@ -4,6 +4,7 @@ import { decodeJwt } from 'jose'
 
 import type { AppRuntime } from '../effects/app-runtime'
 import logger from '../logger'
+import { type CloudHostTokenGate, cloudHostTokenGate } from './cloud-host-revocation'
 import { validateDaemonToken } from './daemon-tokens'
 import { type AuthContextOptionalOrg, validateJWT } from './jwt-validator'
 import { authenticatePersonalAccessToken } from './personal-access-tokens'
@@ -50,9 +51,14 @@ export type DaemonAuthContext = {
 	userId: string
 	organizationId: string
 	hostId: string
+	/** The token was minted for a cloud host (`cloud_hosts`); see auth/cloud-host-revocation.ts. */
+	cloudHost?: boolean
 }
 
-export async function getDaemonAuthContext(req: Request): Promise<DaemonAuthContext | null> {
+export async function getDaemonAuthContext(
+	req: Request,
+	gate: CloudHostTokenGate = cloudHostTokenGate(),
+): Promise<DaemonAuthContext | null> {
 	const daemonAuthHeader = req.headers.get('x-daemon-authorization')
 	if (!daemonAuthHeader) {
 		logger.warn('Missing daemon authorization header')
@@ -66,11 +72,19 @@ export async function getDaemonAuthContext(req: Request): Promise<DaemonAuthCont
 			return null
 		}
 
-		return {
+		// Only cloud host tokens are revocable; ordinary daemon tokens skip the lookup entirely.
+		if (validated.cloudHost === true && !(await gate.isActive(validated))) {
+			logger.warn('Rejected revoked cloud host daemon token', { hostId: validated.hostId })
+			return null
+		}
+
+		const context: DaemonAuthContext = {
 			userId: validated.userId,
 			organizationId: validated.organizationId,
 			hostId: validated.hostId,
 		}
+		if (validated.cloudHost === true) context.cloudHost = true
+		return context
 	} catch (error) {
 		Sentry.captureException(error, {
 			tags: { error_type: 'auth_failure' },

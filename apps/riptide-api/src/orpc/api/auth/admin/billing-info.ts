@@ -8,6 +8,7 @@ import { Effect } from 'effect'
 
 import { billingTierForPriceId, priceIdByTierFromEnvironment } from '../../../../effects/services/billing/billing-tier'
 import { Sentry } from '../../../../instrument'
+import { isBillingDisabled } from '../../../../lib/billing-mode'
 import { STARTER_FREE_CAPACITY } from '../../../../lib/free-capacity'
 import { logger } from '../../../../logger'
 import { apiBaseForOrganizationAdmin } from '../../../base'
@@ -49,7 +50,10 @@ export const billingInfoProcedure = apiBaseForOrganizationAdmin.auth.admin.billi
 				throw errors.INTERNAL_SERVER_ERROR({ data: { message: 'Invalid billing organization data' } })
 			}
 
-			const stripeCustomerId = parsedOrganization?.data.stripe_customer_id ?? null
+			// Billing off: report "not linked" without touching Stripe, even if a customer id is stored.
+			const stripeCustomerId = isBillingDisabled(stripe)
+				? null
+				: (parsedOrganization?.data.stripe_customer_id ?? null)
 			const activeSeatCount = organization
 				? await workos.countActiveOrganizationMemberships(parsedOrganization?.data.workos_organization_id ?? '')
 				: null

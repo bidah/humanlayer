@@ -11,6 +11,7 @@
     "./billing-kv": "./src/billing-kv/index.ts",
     "./keys": "./src/keys.ts",
     "./redis": "./src/redis/index.ts",
+    "./redis-kv": "./src/redis/redis-kv-live.ts",
     "./types": "./src/types.ts",
     "./visibility": "./src/visibility.ts"
   },

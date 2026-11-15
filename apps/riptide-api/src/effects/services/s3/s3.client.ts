@@ -1,27 +1,45 @@
 import { Context, Effect } from 'effect'
 
-import { S3Service as LegacyS3Service } from '../../../lib/s3-service'
+import type { IS3Service } from '../../../lib/s3-service'
 import { S3PresignError } from './s3.errors'
 import type { PresignedDownloadInput, PresignedUploadInput } from './s3.schema'
 
 export interface S3PresigningAdapterShape {
 	readonly presignDownload: (input: PresignedDownloadInput) => Effect.Effect<string, S3PresignError>
 	readonly presignUpload: (input: PresignedUploadInput) => Effect.Effect<string, S3PresignError>
+	/** Present when the backend can write directly instead of PUTting to a presigned URL. */
+	readonly putObject?: (input: {
+		key: string
+		bytes: Uint8Array
+		contentType: string
+	}) => Effect.Effect<void, unknown>
 }
 
 export class S3PresigningAdapter extends Context.Service<S3PresigningAdapter, S3PresigningAdapterShape>()(
 	'S3PresigningAdapter',
 ) {}
 
-export const makeLegacyS3PresigningAdapter = (legacy: LegacyS3Service): S3PresigningAdapterShape => ({
-	presignDownload: (input) =>
-		Effect.tryPromise({
-			try: () => legacy.getPresignedDownloadUrl(input.key, input.expiresInMinutes),
-			catch: (cause) => new S3PresignError({ operation: 'download', cause }),
-		}),
-	presignUpload: (input) =>
-		Effect.tryPromise({
-			try: () => legacy.getPresignedUploadUrl(input.key, input.contentType, input.expiresInMinutes),
-			catch: (cause) => new S3PresignError({ operation: 'upload', cause }),
-		}),
-})
+export const makeLegacyS3PresigningAdapter = (legacy: IS3Service): S3PresigningAdapterShape => {
+	const adapter: S3PresigningAdapterShape = {
+		presignDownload: (input) =>
+			Effect.tryPromise({
+				try: () => legacy.getPresignedDownloadUrl(input.key, input.expiresInMinutes),
+				catch: (cause) => new S3PresignError({ operation: 'download', cause }),
+			}),
+		presignUpload: (input) =>
+			Effect.tryPromise({
+				try: () => legacy.getPresignedUploadUrl(input.key, input.contentType, input.expiresInMinutes),
+				catch: (cause) => new S3PresignError({ operation: 'upload', cause }),
+			}),
+	}
+	const putObject = legacy.putObject?.bind(legacy)
+	if (putObject === undefined) return adapter
+	return {
+		...adapter,
+		putObject: (input) =>
+			Effect.tryPromise({
+				try: () => putObject(input.key, input.bytes, input.contentType),
+				catch: (cause) => new S3PresignError({ operation: 'upload', cause }),
+			}),
+	}
+}

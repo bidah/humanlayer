@@ -19,7 +19,8 @@
     "tsx": "4.23.9",
     "turbo": "2.8.1",
     "typescript": "7.0.2",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "wrangler": "4.158.0"
   },
   "engines": {
     "node": ">=24"
@@ -64,6 +65,10 @@
     "test:services:down": "bun scripts/test-services-down.ts",
     "typecheck": "bun run scripts/run-silent.ts 'typecheck passed' turbo run typecheck",
     "db:migrations:generate": "bun --cwd packages/db drizzle-kit generate",
+    "cloudflare:deploy": "bun scripts/cloudflare/deploy.ts",
+    "cloudflare:deploy:list": "bun scripts/cloudflare/deploy.ts --list",
+    "cloudflare:deploy:dry-run": "bun scripts/cloudflare/deploy.ts --dry-run",
+    "cloudflare:deploy:sites": "bun scripts/cloudflare/deploy.ts --only sites --skip-migrations",
     "devstack": "bun apps/devstack/src/cli.ts",
     "caddy": "bun scripts/ensure-devstack-caddy.ts",
     "riptide": "bun run --parallel caddy riptide:dev",
@@ -222,5 +227,5 @@
     "prosemirror-view": "1.41.3",
     "fast-xml-parser": ">=5.3.5",
     "protobufjs": ">=7.5.5"
-	}
+  }
 }

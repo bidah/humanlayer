@@ -1,0 +1,16 @@
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	// Static assets only (no Worker script). Built and deployed by scripts/cloudflare/deploy.ts,
+	// which bakes the VITE_PUBLIC_* config into the build and writes dist/_headers (security
+	// headers whose CSP needs the deployment's API and sync origins).
+	"name": "humanlayer-cloud",
+	"compatibility_date": "2026-11-04",
+	"workers_dev": true,
+	"preview_urls": false,
+	"assets": {
+		"directory": "./dist",
+		// TanStack Router uses browser-history routes: unknown paths get index.html with 200.
+		"not_found_handling": "single-page-application",
+		"html_handling": "auto-trailing-slash",
+	},
+}

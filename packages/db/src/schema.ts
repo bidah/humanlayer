@@ -7,6 +7,7 @@ import { anonymousArtifactCommenters, artifactComments } from './tables/artifact
 import { artifactOperationsLog } from './tables/artifact-operations-log'
 import { artifactVersions } from './tables/artifact-versions'
 import { artifacts } from './tables/artifacts'
+import { cloudHosts } from './tables/cloud-hosts'
 import { codelayerAgentState } from './tables/codelayer-agent-state'
 import { codelayerAgentStateSnapshots } from './tables/codelayer-agent-state-snapshots'
 import { commitWatchWatermarks } from './tables/commit-watch-watermarks'
@@ -61,6 +62,7 @@ export * from './tables/artifact-comments'
 export * from './tables/artifact-operations-log'
 export * from './tables/artifact-versions'
 export * from './tables/artifacts'
+export * from './tables/cloud-hosts'
 export * from './tables/codelayer-agent-state'
 export * from './tables/codelayer-agent-state-snapshots'
 export * from './tables/commit-watch-watermarks'
@@ -139,6 +141,7 @@ export const applicationTables = [
 	taskUserSettings,
 	taskWorkspaceSetupForHost,
 	onlineHosts,
+	cloudHosts,
 	providerLoginRequests,
 	hostAliases,
 	agentSlashCommands,

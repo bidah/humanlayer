@@ -15,6 +15,8 @@
     "build:macos": "bun run build",
     "build:linux": "bun run build",
     "typecheck": "tsc --noEmit",
+    "worker:dev": "bun ../../scripts/cloudflare/wrangler.ts dev",
+    "worker:deploy": "bun ../../scripts/cloudflare/wrangler.ts deploy",
     "test": "bun --env-file=../../.env vitest run --project unit --project unit-isolated",
     "test:llm": "bun run ../../scripts/run-silent.ts 'tests passed' bun run test",
     "test:resend:live": "bun --env-file=../../.env vitest run --config vitest.resend-live.config.ts",
@@ -88,6 +90,8 @@
     "@types/bun": "catalog:",
     "emulate": "0.11.0",
     "graphql": "17.0.2",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "wrangler": "4.158.0",
+    "@cloudflare/workers-types": "5.20261104.1"
   }
 }

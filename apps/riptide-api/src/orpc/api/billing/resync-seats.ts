@@ -1,5 +1,6 @@
 import { ORPCError } from '@orpc/server'
 
+import { BILLING_NOT_CONFIGURED_MESSAGE, isBillingDisabled } from '../../../lib/billing-mode'
 import { syncOrganizationSeatQuantity } from '../../../lib/seat-sync'
 import { apiBaseForOrganizationAdmin } from '../../base'
 import { logAndCaptureBillingProcedureError } from './errors'
@@ -8,6 +9,7 @@ export const resyncSeatsProcedure = apiBaseForOrganizationAdmin.billing.resyncSe
 	async ({ context, errors }) => {
 		const { organizationId } = context.auth
 		const { db, stripe, workos } = context.services
+		if (isBillingDisabled(stripe)) throw errors.SERVICE_UNAVAILABLE({ message: BILLING_NOT_CONFIGURED_MESSAGE })
 
 		try {
 			const result = await syncOrganizationSeatQuantity(

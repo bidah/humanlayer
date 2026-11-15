@@ -75,6 +75,14 @@ import { resolveBatchDiffCommentsContract } from './api/diff-comments/resolve-ba
 import { durableStreamsContract } from './api/durable-streams'
 import { listHostAliasesContract } from './api/hosts/alias-list'
 import { upsertHostAliasContract } from './api/hosts/alias-upsert'
+import {
+	createCloudHostContract,
+	destroyCloudHostContract,
+	getCloudHostContract,
+	getCloudHostLogsContract,
+	listCloudHostProvidersContract,
+	listCloudHostsContract,
+} from './api/hosts/cloud'
 import { deleteHostContract } from './api/hosts/delete'
 import { requestHostUpdateContract } from './api/hosts/update-request'
 import { createGitHubInstallUrlContract } from './api/integrations/github/create-install-url'
@@ -636,6 +644,14 @@ export const RiptideApiContract = {
 		},
 		update: {
 			request: requestHostUpdateContract,
+		},
+		cloud: {
+			providers: listCloudHostProvidersContract,
+			create: createCloudHostContract,
+			list: listCloudHostsContract,
+			get: getCloudHostContract,
+			logs: getCloudHostLogsContract,
+			destroy: destroyCloudHostContract,
 		},
 	},
 }

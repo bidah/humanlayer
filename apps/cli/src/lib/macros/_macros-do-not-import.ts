@@ -25,6 +25,12 @@ export function BuildVersionMacro(): string {
 	return pkg.version
 }
 
+// WorkOS API origin for device login. Unset keeps https://api.workos.com; set it to point the CLI
+// at a WorkOS-compatible service (e.g. apps/cf-auth).
+export function WorkosApiOriginMacro() {
+	return env('WORKOS_API_ORIGIN')
+}
+
 // Beta environment
 export function BetaWorkosClientIdMacro() {
 	return env('BETA_WORKOS_CLIENT_ID')

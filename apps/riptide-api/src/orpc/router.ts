@@ -76,6 +76,12 @@ import { resolveDiffCommentProcedure } from './api/diff-comments/resolve.effect'
 import { getOrHydrateDurableStreamSessionsProcedure } from './api/durable-streams/sessions'
 import { listHostAliasesEffectProcedure } from './api/hosts/alias-list.effect'
 import { upsertHostAliasEffectProcedure } from './api/hosts/alias-upsert.effect'
+import { createCloudHostEffectProcedure } from './api/hosts/cloud/create.effect'
+import { destroyCloudHostEffectProcedure } from './api/hosts/cloud/destroy.effect'
+import { getCloudHostEffectProcedure } from './api/hosts/cloud/get.effect'
+import { listCloudHostsEffectProcedure } from './api/hosts/cloud/list.effect'
+import { getCloudHostLogsEffectProcedure } from './api/hosts/cloud/logs.effect'
+import { listCloudHostProvidersEffectProcedure } from './api/hosts/cloud/providers.effect'
 import { deleteHostEffectProcedure } from './api/hosts/delete.effect'
 import { requestHostUpdateEffectProcedure } from './api/hosts/update-request.effect'
 import { createGitHubInstallUrlProcedure } from './api/integrations/github/create-install-url.effect'
@@ -636,6 +642,14 @@ export const apiRouter = os.router({
 		},
 		update: {
 			request: requestHostUpdateEffectProcedure,
+		},
+		cloud: {
+			providers: listCloudHostProvidersEffectProcedure,
+			create: createCloudHostEffectProcedure,
+			list: listCloudHostsEffectProcedure,
+			get: getCloudHostEffectProcedure,
+			logs: getCloudHostLogsEffectProcedure,
+			destroy: destroyCloudHostEffectProcedure,
 		},
 	},
 })

@@ -1,0 +1,27 @@
+{
+  "name": "@humanlayer/cf-jobs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun ../../scripts/cloudflare/wrangler.ts dev",
+    "deploy": "bun ../../scripts/cloudflare/wrangler.ts deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@humanlayer/database-maintenance-function": "workspace:*",
+    "@humanlayer/db": "workspace:*",
+    "@humanlayer/stale-daemon-sweeper": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "postgres": "^3.4.8",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "wrangler": "4.158.0",
+    "@cloudflare/workers-types": "5.20261104.1",
+    "typescript": "7.0.2",
+    "@humanlayer/typescript-config": "workspace:*",
+    "vitest": "catalog:"
+  }
+}

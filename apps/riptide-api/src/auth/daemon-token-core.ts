@@ -55,6 +55,13 @@ export const DaemonTokenClaims = Schema.Struct({
 	organizationId: Schema.String,
 	hostId: Schema.String,
 	createdAt: Schema.Number,
+	/**
+	 * Set only on tokens minted for a cloud host (`hosts.cloud.create`). Such a token can be
+	 * revoked: every request that presents it is checked against `cloud_hosts.revoked_at`. Tokens
+	 * without the claim never touch the database, so ordinary hosts pay nothing for revocation.
+	 * The claim is signed, so a cloud token cannot be stripped of it to skip the check.
+	 */
+	cloudHost: Schema.optionalKey(Schema.Boolean),
 })
 export interface DaemonTokenClaims extends Schema.Schema.Type<typeof DaemonTokenClaims> {}
 

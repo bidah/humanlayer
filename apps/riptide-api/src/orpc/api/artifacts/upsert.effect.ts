@@ -16,6 +16,7 @@ import { Sentry } from '../../../instrument'
 import { MAX_TEXT_CONTENT_BYTES } from '../../../lib/constants'
 import { normalizeSubpath } from '../../../lib/normalize-subpath'
 import logger from '../../../logger'
+import { trackBackgroundFiber } from '../../../platform/request-scope'
 import { effectOrpcBaseOrganizationRequired, requiresBillingEffectMiddleware } from '../../effect-base'
 
 const DESIGN_DOCUMENT_TYPES: readonly string[] = ['design-discussion', 'design-prd', 'design-tdd']
@@ -180,6 +181,8 @@ export const upsertApiArtifactProcedure = effectOrpcBaseOrganizationRequired.art
 						}),
 					),
 					Effect.forkDetach({ startImmediately: true }),
+					// Workers: keep the request alive (waitUntil) for the detached dispatch; no-op on Node.
+					Effect.tap((fiber) => Effect.sync(() => trackBackgroundFiber(fiber))),
 				)
 		}
 

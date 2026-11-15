@@ -31,10 +31,22 @@ export function getWorkosRedirectUri(): string {
 	return _workosRedirectUri
 }
 
+// Optional override of the WorkOS API host, so the SDK can target a WorkOS-compatible service
+// (for example the self-hosted `humanlayer-auth` Worker). Unset = api.workos.com, as upstream.
+export function workosClientOptions(): { apiHostname?: string; https?: boolean; port?: number } {
+	const apiHostname = process.env.WORKOS_API_HOSTNAME
+	if (!apiHostname) return {}
+	return {
+		apiHostname,
+		https: process.env.WORKOS_API_HTTPS !== 'false',
+		port: process.env.WORKOS_API_PORT ? Number(process.env.WORKOS_API_PORT) : undefined,
+	}
+}
+
 // Export getter for singleton WorkOS client
 export function getWorkos(): WorkOS {
 	if (!_workos) {
-		_workos = new WorkOS(getWorkosApiKey())
+		_workos = new WorkOS(getWorkosApiKey(), workosClientOptions())
 	}
 	return _workos
 }

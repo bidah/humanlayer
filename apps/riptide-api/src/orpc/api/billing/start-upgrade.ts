@@ -9,6 +9,7 @@ import {
 	resolveBillingCheckoutClient,
 } from '../../../effects/services/billing-checkout-completion/billing-checkout-client'
 import { refreshStripeBillingCache } from '../../../effects/services/billing/billing-access.service'
+import { BILLING_NOT_CONFIGURED_MESSAGE, isBillingDisabled } from '../../../lib/billing-mode'
 import { buildBillingClientUrl } from '../../../lib/stripe-service'
 import logger from '../../../logger'
 import { apiBaseForOrganizationAdmin } from '../../base'
@@ -19,6 +20,7 @@ export const startUpgradeProcedure = apiBaseForOrganizationAdmin.billing.startUp
 	async ({ input, context, errors }) => {
 		const { organizationId } = context.auth
 		const { db, effectRuntime, stripe, workos } = context.services
+		if (isBillingDisabled(stripe)) throw errors.SERVICE_UNAVAILABLE({ message: BILLING_NOT_CONFIGURED_MESSAGE })
 
 		try {
 			const checkoutClient = await effectRuntime.runPromise(resolveBillingCheckoutClient(input, organizationId))

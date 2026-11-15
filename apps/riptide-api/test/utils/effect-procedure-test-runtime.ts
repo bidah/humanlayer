@@ -20,6 +20,10 @@ import { BillingCheckoutCompletionService } from '../../src/effects/services/bil
 import { BillingAccess } from '../../src/effects/services/billing/billing-access.service'
 import type { BillingDependencies } from '../../src/effects/services/billing/billing-plan'
 import { type Entitlements, EntitlementsLive } from '../../src/effects/services/billing/entitlements.service'
+import {
+	CloudHostProvisioner,
+	CloudHostProvisionerError,
+} from '../../src/effects/services/cloud-hosts/cloud-host-provisioner.service'
 import { DiffCommentsLive } from '../../src/effects/services/diff-comments/diff-comments-live'
 import { DurableStreamsConfig } from '../../src/effects/services/durable-streams/durable-streams-config.service'
 import { DurableStreamSessionServiceLive } from '../../src/effects/services/durable-streams/streams'
@@ -83,6 +87,8 @@ export type TestRuntimeOptions = {
 	 * fetch transport, as production does. Override it when a test must not reach the network.
 	 */
 	httpClient?: Layer.Layer<HttpClient>
+	/** Defaults to a provisioner that is not configured (every call fails with `not_configured`). */
+	cloudHostProvisioner?: Layer.Layer<CloudHostProvisioner>
 }
 
 function testDurableStreamsConfigLayer(origin: string) {
@@ -309,6 +315,17 @@ const fakeTaskIntentClassifierLayer = Layer.succeed(TaskIntentClassifier, {
 		),
 })
 
+const unconfiguredProvisionerError = () =>
+	new CloudHostProvisionerError({ status: 501, code: 'not_configured', message: 'not configured in test runtime' })
+
+const fakeCloudHostProvisionerLayer = Layer.succeed(CloudHostProvisioner, {
+	providers: () => Effect.succeed({ cloudflare: false, daytona: false, e2b: false }),
+	create: () => Effect.fail(unconfiguredProvisionerError()),
+	status: () => Effect.fail(unconfiguredProvisionerError()),
+	logs: () => Effect.fail(unconfiguredProvisionerError()),
+	destroy: () => Effect.fail(unconfiguredProvisionerError()),
+})
+
 const fakeSessionTitleGenerationLayer = Layer.succeed(SessionTitleGeneration, {
 	scheduleGeneration: () => Effect.void,
 })
@@ -382,6 +399,7 @@ export function createRuntimeWithTestPostgresLayer(
 			TaskLaunchServiceLive,
 			options?.taskIntentClassifier ?? fakeTaskIntentClassifierLayer,
 			options?.sessionTitleGeneration ?? fakeSessionTitleGenerationLayer,
+			options?.cloudHostProvisioner ?? fakeCloudHostProvisionerLayer,
 			slackLayer,
 			options?.github ?? fakeGitHubLayer,
 			options?.prStatusStream ?? fakePrStatusStreamLayer,

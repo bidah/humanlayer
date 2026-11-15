@@ -3,6 +3,7 @@ import { ORPCError } from '@orpc/server'
 import { eq } from 'drizzle-orm'
 
 import { refreshStripeBillingCache } from '../../../effects/services/billing/billing-access.service'
+import { BILLING_NOT_CONFIGURED_MESSAGE, isBillingDisabled } from '../../../lib/billing-mode'
 import { apiBaseForOrganizationAdmin } from '../../base'
 import { logAndCaptureBillingProcedureError } from './errors'
 import { captureInvalidBillingOrganizationRow } from './organization-billing-schema'
@@ -12,6 +13,7 @@ export const finalizeUpgradeProcedure = apiBaseForOrganizationAdmin.billing.fina
 	async ({ context, errors }) => {
 		const { organizationId } = context.auth
 		const { db, effectRuntime, stripe } = context.services
+		if (isBillingDisabled(stripe)) throw errors.SERVICE_UNAVAILABLE({ message: BILLING_NOT_CONFIGURED_MESSAGE })
 
 		try {
 			const [organization] = await db

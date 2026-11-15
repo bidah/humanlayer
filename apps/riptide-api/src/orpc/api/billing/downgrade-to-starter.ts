@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 
 import { refreshStripeBillingCache } from '../../../effects/services/billing/billing-access.service'
+import { BILLING_NOT_CONFIGURED_MESSAGE, isBillingDisabled } from '../../../lib/billing-mode'
 import { canDowngradeToStarter, STARTER_FREE_CAPACITY } from '../../../lib/free-capacity'
 import logger from '../../../logger'
 import { apiBaseForOrganizationAdmin } from '../../base'
@@ -15,6 +16,7 @@ export const downgradeToStarterProcedure = apiBaseForOrganizationAdmin.billing.d
 	async ({ context, errors }) => {
 		const { organizationId } = context.auth
 		const { db, effectRuntime, stripe, workos } = context.services
+		if (isBillingDisabled(stripe)) throw errors.SERVICE_UNAVAILABLE({ message: BILLING_NOT_CONFIGURED_MESSAGE })
 
 		try {
 			const [organization] = await db

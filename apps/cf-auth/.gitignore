@@ -1,0 +1,5 @@
+.wrangler/
+.dev.vars
+.test-state/
+# bootstrap writes generated credentials here (0600); never commit
+.bootstrap-credentials*.json

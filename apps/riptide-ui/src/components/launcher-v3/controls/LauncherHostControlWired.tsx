@@ -138,6 +138,7 @@ export function LauncherHostControlWired({ control, disabled }: LauncherHostCont
 			disabled={disabled}
 			onSelectHost={selectHost}
 			onOpenDaemonSettings={() => navigate({ to: '/settings/daemons' })}
+			onCreateCloudHost={() => navigate({ to: '/settings/daemons', search: { newCloudHost: true } })}
 			onLaunchDesktopApp={() => {
 				window.location.href = buildNavigationDeepLink('/tasks/new')
 			}}

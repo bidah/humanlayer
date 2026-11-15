@@ -1,3 +1,5 @@
+import { resolveWorkosApiOrigin } from '../lib/macros'
+
 export interface DeviceAuthResult {
 	access_token: string
 	refresh_token: string
@@ -18,8 +20,11 @@ interface DeviceCodeResponse {
  * Request device codes from WorkOS.
  * WorkOS shows an org picker in the browser for multi-org users.
  */
-export async function requestDeviceCodes(clientId: string): Promise<DeviceCodeResponse> {
-	const resp = await fetch('https://api.workos.com/user_management/authorize/device', {
+export async function requestDeviceCodes(
+	clientId: string,
+	workosOrigin: string = resolveWorkosApiOrigin(),
+): Promise<DeviceCodeResponse> {
+	const resp = await fetch(`${workosOrigin}/user_management/authorize/device`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 		body: new URLSearchParams({ client_id: clientId }),
@@ -36,11 +41,16 @@ export async function requestDeviceCodes(clientId: string): Promise<DeviceCodeRe
  * Poll WorkOS for token completion.
  * Blocks until the user completes authentication or the device code expires.
  */
-export async function pollForToken(clientId: string, deviceCode: string, interval: number): Promise<DeviceAuthResult> {
+export async function pollForToken(
+	clientId: string,
+	deviceCode: string,
+	interval: number,
+	workosOrigin: string = resolveWorkosApiOrigin(),
+): Promise<DeviceAuthResult> {
 	while (true) {
 		await new Promise((resolve) => setTimeout(resolve, interval * 1000))
 
-		const resp = await fetch('https://api.workos.com/user_management/authenticate', {
+		const resp = await fetch(`${workosOrigin}/user_management/authenticate`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 			body: new URLSearchParams({

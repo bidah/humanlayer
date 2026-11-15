@@ -9,6 +9,7 @@ import { createMiddleware } from 'hono/factory'
 import { StatusCodes } from 'http-status-codes'
 
 import type { AppConfig, SimpleAuthContext } from './app-config'
+import { makeCloudHostRevocationLookup, makeCloudHostTokenGate } from './auth/cloud-host-revocation'
 import { createJWTValidator } from './auth/jwt-validator'
 import { Sentry } from './lib/effect/sentry.service'
 import { logger } from './lib/logger'
@@ -59,6 +60,8 @@ export const withTableAndOrganizationFilter = (table: OrganizationFilterableTabl
  */
 export const createAuthMiddleware = (config: AppConfig) => {
 	const validateJWT = createJWTValidator(config.effectRuntime)
+	const cloudHostTokenGate =
+		config.cloudHostTokenGate ?? makeCloudHostTokenGate(makeCloudHostRevocationLookup(() => config.db))
 
 	return createMiddleware(async (c, next) => {
 		// Test mode: bypass auth and use provided context
@@ -93,7 +96,12 @@ export const createAuthMiddleware = (config: AppConfig) => {
 
 			if (daemonAuthHeader) {
 				try {
-					const ctx = await config.validateDaemonToken(daemonAuthHeader)
+					const validated = await config.validateDaemonToken(daemonAuthHeader)
+					// Only cloud host tokens are revocable; ordinary daemon tokens skip the lookup.
+					const ctx =
+						validated && validated.cloudHost === true && !(await cloudHostTokenGate.isActive(validated))
+							? null
+							: validated
 					if (ctx)
 						authContext = {
 							organizationId: ctx.organizationId,

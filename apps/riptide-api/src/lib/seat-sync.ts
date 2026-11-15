@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type Stripe from 'stripe'
 
+import { isBillingDisabled } from './billing-mode'
 import type { IStripeService } from './stripe-service'
 import type { WorkosSdkAdapter } from './workos-service'
 
@@ -32,6 +33,28 @@ export type SeatSyncResult = {
 	previousQuantity: number | null
 	currentQuantity: number | null
 	stripeQuantityChanged: boolean
+}
+
+/** Returned instead of {@link SeatSyncResult} when billing is off: there is no subscription to sync. */
+export type SeatSyncSkipped = {
+	organizationId: string
+	reason: SeatSyncReason
+	skipped: 'billing_not_configured'
+}
+
+/**
+ * Seat sync as a side effect of a membership change (invite accepted, member removed/deactivated/
+ * reactivated, role change, WorkOS webhook). With billing off there is no subscription, so this is
+ * a no-op instead of failing the membership change; otherwise it is {@link syncOrganizationSeatQuantity}.
+ */
+export async function syncSeatsAfterMembershipChange(
+	input: Parameters<typeof syncOrganizationSeatQuantity>[0],
+	deps: SeatSyncDependencies,
+): Promise<SeatSyncResult | SeatSyncSkipped> {
+	if (isBillingDisabled(deps.stripeService)) {
+		return { organizationId: input.organizationId, reason: input.reason, skipped: 'billing_not_configured' }
+	}
+	return syncOrganizationSeatQuantity(input, deps)
 }
 
 export async function syncOrganizationSeatQuantity(

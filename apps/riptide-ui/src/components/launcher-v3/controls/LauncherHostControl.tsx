@@ -46,6 +46,8 @@ export interface LauncherHostControlProps {
 	disabled?: boolean
 	onSelectHost: (hostId: string) => void
 	onOpenDaemonSettings: () => void
+	/** Opens the "New cloud host" dialog in host settings. */
+	onCreateCloudHost: () => void
 	onLaunchDesktopApp: () => void
 	onDownloadDesktopApp: () => void
 	onBlur: () => void
@@ -276,6 +278,7 @@ export function LauncherHostControl({
 	disabled = false,
 	onSelectHost,
 	onOpenDaemonSettings,
+	onCreateCloudHost,
 	onLaunchDesktopApp,
 	onDownloadDesktopApp,
 	onBlur,
@@ -312,6 +315,15 @@ export function LauncherHostControl({
 				</DropdownMenuLabel>
 				<HostMenuList state={state} selectedHostId={selectedHost?.id ?? null} onSelectHost={onSelectHost} />
 				<DropdownMenuSeparator />
+				<DropdownMenuItem onSelect={onCreateCloudHost}>
+					<Cloud aria-hidden className="size-3.5 text-[var(--terminal-accent)]" />
+					<span className="flex min-w-0 flex-col">
+						<span className="text-xs font-medium">New cloud host</span>
+						<span className="text-[10px] text-muted-foreground">
+							Run sessions without keeping a device on
+						</span>
+					</span>
+				</DropdownMenuItem>
 				<DropdownMenuItem onSelect={onOpenDaemonSettings}>
 					<Plus aria-hidden className="size-3.5 text-[var(--terminal-accent)]" />
 					<span className="flex min-w-0 flex-col">

@@ -6,6 +6,7 @@ import {
 	InvalidLegacyBillingCheckoutClientError,
 	resolveBillingCheckoutClient,
 } from '../../../effects/services/billing-checkout-completion/billing-checkout-client'
+import { BILLING_NOT_CONFIGURED_MESSAGE, isBillingDisabled } from '../../../lib/billing-mode'
 import logger from '../../../logger'
 import { apiBaseForOrganizationAdmin } from '../../base'
 import { logAndCaptureBillingProcedureError } from './errors'
@@ -16,6 +17,7 @@ export const createCheckoutSessionProcedure = apiBaseForOrganizationAdmin.billin
 		const { organizationId } = context.auth
 		const { db, effectRuntime, stripe, workos } = context.services
 		const { promoCode } = input
+		if (isBillingDisabled(stripe)) throw errors.SERVICE_UNAVAILABLE({ message: BILLING_NOT_CONFIGURED_MESSAGE })
 
 		try {
 			const checkoutClient = await effectRuntime.runPromise(resolveBillingCheckoutClient(input, organizationId))

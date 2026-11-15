@@ -64,6 +64,23 @@ export async function createSignedDaemonToken(
 }
 
 /**
+ * Create the daemon token for a cloud host. Same claims as {@link createSignedDaemonToken} plus the
+ * signed `cloudHost` claim, which makes the API and the sync proxy check the token against
+ * `cloud_hosts.revoked_at` on every request (auth/cloud-host-revocation.ts).
+ */
+export async function createSignedCloudHostDaemonToken(
+	userId: string,
+	organizationId: string,
+	hostId: string,
+	createdAt: number = Date.now(),
+): Promise<string> {
+	const key = await getPrivateKey()
+	return await new SignJWT({ userId, organizationId, hostId, createdAt, cloudHost: true })
+		.setProtectedHeader({ alg: ALG })
+		.sign(key)
+}
+
+/**
  * Validate a daemon token using env-configured public key.
  * Key is imported once and cached for subsequent calls.
  */

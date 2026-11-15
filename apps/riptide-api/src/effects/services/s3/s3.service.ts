@@ -5,6 +5,7 @@ import * as HttpClientRequest from 'effect/http/HttpClientRequest'
 import * as HttpClientResponse from 'effect/http/HttpClientResponse'
 
 import { Sentry } from '../../../instrument'
+import { makeR2ObjectStorageIfConfigured } from '../../../lib/object-storage'
 import { S3Service as LegacyS3Service } from '../../../lib/s3-service'
 import { makeLegacyS3PresigningAdapter, S3PresigningAdapter } from './s3.client'
 import { S3UploadError } from './s3.errors'
@@ -67,22 +68,31 @@ export const S3LiveBase = Layer.effect(
 					Effect.mapError((error) => new Error('Unable to create upload URL', { cause: error })),
 					Effect.withSpan('s3.presign_upload'),
 				),
-			uploadArtifactBytes: (input) =>
-				presigner.presignUpload({ key: input.key, contentType: input.contentType }).pipe(
-					Effect.flatMap((url) =>
-						httpClient.execute(
-							HttpClientRequest.put(url).pipe(
-								HttpClientRequest.bodyUint8Array(input.bytes),
-								HttpClientRequest.setHeader('content-type', input.contentType),
+			uploadArtifactBytes: (input) => {
+				// R2 on Cloudflare writes directly (a Worker cannot reliably fetch its own hostname);
+				// S3 PUTs to a presigned URL as before.
+				const upload: Effect.Effect<void, S3UploadError> = presigner.putObject
+					? presigner
+							.putObject(input)
+							.pipe(Effect.mapError((cause) => new S3UploadError({ status: null, cause })))
+					: presigner.presignUpload({ key: input.key, contentType: input.contentType }).pipe(
+							Effect.flatMap((url) =>
+								httpClient.execute(
+									HttpClientRequest.put(url).pipe(
+										HttpClientRequest.bodyUint8Array(input.bytes),
+										HttpClientRequest.setHeader('content-type', input.contentType),
+									),
+								),
 							),
-						),
-					),
-					Effect.flatMap(HttpClientResponse.filterStatusOk),
-					Effect.asVoid,
-					Effect.mapError((cause) => new S3UploadError({ status: null, cause })),
+							Effect.flatMap(HttpClientResponse.filterStatusOk),
+							Effect.asVoid,
+							Effect.mapError((cause) => new S3UploadError({ status: null, cause })),
+						)
+				return upload.pipe(
 					Effect.tapError((error) => capture(error, 'upload_artifact_bytes')),
 					Effect.withSpan('s3.upload_artifact_bytes', { attributes: { byte_count: input.bytes.byteLength } }),
-				),
+				)
+			},
 		}
 	}),
 )
@@ -90,6 +100,10 @@ export const S3LiveBase = Layer.effect(
 const S3PresigningAdapterLive = Layer.effect(
 	S3PresigningAdapter,
 	Effect.gen(function* () {
+		// Cloudflare: R2 behind Worker-signed URLs when the ARTIFACTS binding is present and no S3
+		// credentials are configured (see lib/object-storage.ts). Otherwise S3, unchanged.
+		const r2 = makeR2ObjectStorageIfConfigured()
+		if (r2) return makeLegacyS3PresigningAdapter(r2)
 		const bucket = yield* Config.String('S3_ARTIFACTS_BUCKET')
 		const region = yield* Config.String('S3_ARTIFACTS_REGION').pipe(Config.withDefault('us-east-1'))
 		const endpoint = yield* Config.option(Config.String('S3_ARTIFACTS_ENDPOINT'))

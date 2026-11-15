@@ -1,0 +1,38 @@
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	// Template: ${NAME} placeholders and account_id come from .env.cloudflare. Use the package scripts
+	// (or scripts/cloudflare/deploy.ts), which render this file to wrangler.rendered.json first.
+	"name": "humanlayer-auth",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-11-04",
+	"workers_dev": true,
+	"observability": { "enabled": true },
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "humanlayer-auth",
+			"database_id": "${AUTH_D1_DATABASE_ID}",
+			"migrations_dir": "migrations"
+		}
+	],
+	"vars": {
+		// Public client id; must equal WORKOS_CLIENT_ID (API, proxy) and VITE_PUBLIC_WORKOS_CLIENT_ID (browser apps).
+		"CLIENT_ID": "client_humanlayer_cloudflare",
+		"PUBLIC_URL": "${AUTH_ORIGIN}",
+		// Exact URIs, or <origin>/* for any path on that origin.
+		"ALLOWED_REDIRECT_URIS": "${APP_ORIGIN}/* ${CLOUD_ORIGIN}/* ${API_ORIGIN}/* http://localhost:3000/* http://localhost:5174/* riptide://oauth/callback ${AUTH_EXTRA_REDIRECT_URIS}",
+		// Self sign-up without an invitation (closed by default).
+		"SIGNUP_ALLOWED_EMAILS": "${AUTH_SIGNUP_ALLOWED_EMAILS}",
+		"SIGNUP_ALLOWED_DOMAINS": "${AUTH_SIGNUP_ALLOWED_DOMAINS}",
+		"ROLE_SLUGS": "admin,member,manager",
+		"ACCESS_TOKEN_TTL_SECONDS": "3600",
+		"REFRESH_TOKEN_TTL_SECONDS": "2592000",
+		"INVITATION_LANDING_URL": "${CLOUD_ORIGIN}/",
+		// Optional signed organization_membership.* webhooks (also needs the WEBHOOK_SECRET secret).
+		"WEBHOOK_URL": "${AUTH_WEBHOOK_URL}"
+	},
+	// Uploaded by scripts/cloudflare/deploy.ts from .env.cloudflare (HUMANLAYER_AUTH_API_KEY,
+	// HUMANLAYER_AUTH_SIGNING_KEY_JWK, HUMANLAYER_AUTH_WEBHOOK_SECRET). The optional
+	// SIGNING_KEY_JWK_PREVIOUS (HUMANLAYER_AUTH_SIGNING_KEY_JWK_PREVIOUS) is uploaded when set.
+	"secrets": { "required": ["API_KEY", "SIGNING_KEY_JWK", "WEBHOOK_SECRET"] }
+}

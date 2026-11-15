@@ -1,0 +1,40 @@
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	// Template: account_id (and any ${NAME} placeholder) comes from .env.cloudflare; deploy with the
+	// package scripts or scripts/cloudflare/deploy.ts, which render this file to wrangler.rendered.json.
+	"name": "humanlayer-electric",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-11-04",
+	// Reachable only through a service binding (from humanlayer-sync). No workers.dev, no routes.
+	"workers_dev": false,
+	"preview_urls": false,
+	"observability": { "enabled": true },
+	"containers": [
+		{
+			// Template: account_id (and any ${NAME} placeholder) comes from .env.cloudflare; deploy with the
+	// package scripts or scripts/cloudflare/deploy.ts, which render this file to wrangler.rendered.json.
+	"name": "humanlayer-electric",
+			"class_name": "ElectricContainer",
+			// Public multi-arch image pulled by reference. Needs the `default` scheduling policy:
+			// the `durable_object` policy only pulls from registry.cloudflare.com.
+			"image": "docker.io/electricsql/electric:1.7.12",
+			"scheduling_policy": "default",
+			// basic = 1/4 vCPU, 1 GiB, 4 GB disk. Electric env in src/index.ts is sized for it
+			// (pool 10, max 1000 shapes). Bump to standard-1 (1/2 vCPU, 4 GiB, 8 GB) if it OOMs or
+			// initial syncs of large shapes get slow.
+			"instance_type": "basic",
+			// Singleton: Electric holds a replication slot and an advisory lock.
+			"max_instances": 1,
+			"rollout_step_percentage": 100,
+		},
+	],
+	"durable_objects": {
+		"bindings": [{ "name": "ELECTRIC", "class_name": "ElectricContainer" }],
+	},
+	"exports": {
+		"ElectricContainer": { "type": "durable-object", "storage": "sqlite", "container": "humanlayer-electric" },
+	},
+	// Uploaded from .env.cloudflare by scripts/cloudflare/deploy.ts. DATABASE_URL must be the
+	// direct (non-pooled) Neon URL: logical replication needs a real session.
+	"secrets": { "required": ["DATABASE_URL", "ELECTRIC_SECRET", "INTERNAL_SERVICE_SECRET"] },
+}

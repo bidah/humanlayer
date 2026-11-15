@@ -3,6 +3,7 @@ import { ORPCError } from '@orpc/server'
 import { eq } from 'drizzle-orm'
 
 import { Sentry } from '../../../instrument'
+import { BILLING_NOT_CONFIGURED_MESSAGE, isBillingDisabled } from '../../../lib/billing-mode'
 import logger from '../../../logger'
 import { apiBaseForOrganizationAdmin } from '../../base'
 import { logAndCaptureBillingProcedureError } from './errors'
@@ -13,6 +14,7 @@ export const createPortalSessionProcedure = apiBaseForOrganizationAdmin.billing.
 		const { organizationId } = context.auth
 		const { db, stripe } = context.services
 		const { returnUrl } = input
+		if (isBillingDisabled(stripe)) throw errors.SERVICE_UNAVAILABLE({ message: BILLING_NOT_CONFIGURED_MESSAGE })
 
 		try {
 			const [organization] = await db

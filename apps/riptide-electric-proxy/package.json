@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit",
     "test": "bun vitest run",
     "test:watch": "bun vitest",
-    "test:llm": "bun run ../../scripts/run-silent.ts 'tests passed' bun run test"
+    "test:llm": "bun run ../../scripts/run-silent.ts 'tests passed' bun run test",
+    "worker:dev": "bun ../../scripts/cloudflare/wrangler.ts dev -c wrangler.jsonc -c test/worker/stubs/electric.wrangler.jsonc -c test/worker/stubs/streams.wrangler.jsonc",
+    "worker:deploy": "bun ../../scripts/cloudflare/wrangler.ts deploy"
   },
   "dependencies": {
     "@humanlayer/db": "workspace:*",
@@ -52,6 +54,8 @@
     "lib0": "catalog:",
     "tsx": "4.22.4",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "wrangler": "4.158.0",
+    "@cloudflare/workers-types": "5.20261104.1"
   }
 }

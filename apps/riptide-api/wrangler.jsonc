@@ -1,0 +1,83 @@
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	// Template: account_id (and any ${NAME} placeholder) comes from .env.cloudflare; deploy with the
+	// package scripts or scripts/cloudflare/deploy.ts, which render this file to wrangler.rendered.json.
+	"name": "humanlayer-api",
+	"main": "src/worker.ts",
+	"compatibility_date": "2026-11-04",
+	// global_fetch_strictly_public: lets this Worker fetch sibling Workers on the same account by their
+	// public workers.dev URL (the WorkOS-compatible auth service); without it Cloudflare answers 404 (error 1042).
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"workers_dev": true,
+	"observability": { "enabled": true },
+	// Run next to the Postgres primary: every request makes several sequential DB round trips.
+	// PLACEMENT_REGION in .env.cloudflare (default aws:us-east-1).
+	"placement": { "mode": "targeted", "region": "${PLACEMENT_REGION}" },
+	// Build-time module replacement for Node-only dependencies (the Node/AWS build is unaffected).
+	"alias": {
+		"@sentry/node": "./src/worker-shims/sentry.ts",
+		"@sentry/core": "./src/worker-shims/sentry.ts",
+		"@sentry/effect/server": "./src/worker-shims/sentry-effect.ts",
+		"@orpc/otel": "./src/worker-shims/orpc-otel.ts",
+	},
+	"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "${HYPERDRIVE_ID}" }],
+	"kv_namespaces": [{ "binding": "BILLING_KV", "id": "${BILLING_KV_ID}" }],
+	"r2_buckets": [{ "binding": "ARTIFACTS", "bucket_name": "humanlayer-artifacts" }],
+	// HOSTS: the cloud host provisioner (apps/cf-hosts); see src/effects/services/cloud-hosts.
+	// It authenticates the API with the INTERNAL_SERVICE_SECRET secret.
+	"services": [
+		{ "binding": "STREAMS", "service": "humanlayer-streams" },
+		{ "binding": "HOSTS", "service": "humanlayer-hosts" },
+	],
+	// Post-response work that can outlive waitUntil (LLM titles / next-step extraction, delayed GitHub
+	// merge-state refresh): see src/platform/background-jobs.ts and src/jobs/. Consumed by this Worker.
+	"queues": {
+		"producers": [{ "binding": "BACKGROUND_QUEUE", "queue": "humanlayer-background" }],
+		"consumers": [
+			{
+				"queue": "humanlayer-background",
+				// Messages run sequentially per invocation (one DB client each); keep batches small so
+				// LLM-bound jobs are not queued behind each other.
+				"max_batch_size": 4,
+				"max_batch_timeout": 1,
+				// The consumer retries each failed message itself with backoff (10 s, 30 s, 90 s);
+				// after 3 retries it is dead-lettered.
+				"max_retries": 3,
+				"retry_delay": 10,
+				"dead_letter_queue": "humanlayer-background-dlq",
+			},
+		],
+	},
+	"vars": {
+		"STAGE": "cloudflare",
+		"SENTRY_ENVIRONMENT": "cloudflare",
+		"IS_BILLING_ENFORCEMENT_ENABLED": "${IS_BILLING_ENFORCEMENT_ENABLED}",
+		"RIPTIDE_API_ORIGIN": "${API_ORIGIN}",
+		// Routed to the humanlayer-streams Worker via the STREAMS service binding (src/platform/streams-fetch.ts);
+		// the hostname is never resolved.
+		"DURABLE_STREAMS_ORIGIN": "https://humanlayer-streams.internal",
+		"LOG_LEVEL": "info",
+		"APP_ORIGIN": "${APP_ORIGIN}",
+		"CLOUD_ORIGIN": "${CLOUD_ORIGIN}",
+		// The provisioner's public origin. Calls still go through the HOSTS binding; the provisioner
+		// derives the CLI download URL it hands to new hosts from this origin.
+		"CLOUD_HOSTS_URL": "${HOSTS_ORIGIN}",
+	},
+	// Uploaded from .env.cloudflare by scripts/cloudflare/deploy.ts. The WORKOS_* values default to
+	// the humanlayer-auth Worker (see scripts/cloudflare/config.ts). Optional integration keys
+	// (Stripe, Resend, GitHub, Slack, Jira, Linear, AI providers, Sentry, PostHog) are uploaded when
+	// set. Note: with this list present, `wrangler dev` loads only these names (plus vars) from .dev.vars.
+	"secrets": {
+		"required": [
+			"INTERNAL_SERVICE_SECRET",
+			"RIPTIDE_DAEMON_TOKEN_PRIVATE_KEY",
+			"RIPTIDE_DAEMON_TOKEN_PUBLIC_KEY",
+			"ARTIFACT_URL_SIGNING_SECRET",
+			"WORKOS_API_KEY",
+			"WORKOS_CLIENT_ID",
+			"WORKOS_API_HOSTNAME",
+			"WORKOS_REDIRECT_URI",
+			"WORKOS_WEBHOOK_SECRET",
+		],
+	},
+}

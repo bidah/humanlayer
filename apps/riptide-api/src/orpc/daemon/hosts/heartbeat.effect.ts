@@ -1,6 +1,7 @@
+import { cloudHosts } from '@humanlayer/db/tables/cloud-hosts'
 import { onlineHosts, onlineHostUpdateState } from '@humanlayer/db/tables/online-hosts'
 import { organizations } from '@humanlayer/db/tables/organizations'
-import { eq, type SQL, sql } from 'drizzle-orm'
+import { and, eq, inArray, type SQL, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 
 import { mapPostgresErrorToResponse } from '../../../effects/services/postgres/error-mapping'
@@ -30,7 +31,7 @@ export const heartbeatEffectProcedure = effectOrpcDaemonBase.hosts.heartbeat.eff
 		stats,
 		codingAgentUsageLimits,
 	} = input
-	const { userId, organizationId, hostId: authHostId } = context.auth
+	const { userId, organizationId, hostId: authHostId, cloudHost } = context.auth
 
 	if (hostId !== authHostId) {
 		return yield* Effect.fail(errors.FORBIDDEN())
@@ -58,6 +59,25 @@ export const heartbeatEffectProcedure = effectOrpcDaemonBase.hosts.heartbeat.eff
 
 				if (!org) {
 					return yield* Effect.fail(errors.UNAUTHORIZED({ message: 'Organization not found' }))
+				}
+
+				// Cloud host tokens only: re-check revocation authoritatively (the auth gate caches
+				// "active" for a few seconds), so a destroyed host can never re-register itself.
+				const cloudHostIdentity = and(
+					eq(cloudHosts.organization_id, organizationId),
+					eq(cloudHosts.user_id, userId),
+					eq(cloudHosts.host_id, hostId),
+				)
+				if (cloudHost === true) {
+					const [cloud] = yield* tx.query(
+						tx.client
+							.select({ revokedAt: cloudHosts.revoked_at })
+							.from(cloudHosts)
+							.where(cloudHostIdentity),
+					)
+					if (!cloud || cloud.revokedAt !== null) {
+						return yield* Effect.fail(errors.UNAUTHORIZED({ message: 'Host was deleted' }))
+					}
 				}
 
 				// Upsert the host record
@@ -120,6 +140,25 @@ export const heartbeatEffectProcedure = effectOrpcDaemonBase.hosts.heartbeat.eff
 							updateState: onlineHosts.update_state,
 						}),
 				)
+
+				// The first accepted heartbeat is what makes a cloud host ready.
+				if (cloudHost === true) {
+					yield* tx.query(
+						tx.client
+							.update(cloudHosts)
+							.set({
+								status: 'ready',
+								error: null,
+								ready_at: sql`coalesce(${cloudHosts.ready_at}, ${now})`,
+							})
+							.where(
+								and(
+									cloudHostIdentity,
+									inArray(cloudHosts.status, ['provisioning', 'bootstrapping', 'failed']),
+								),
+							),
+					)
+				}
 
 				return {
 					updateRequest:

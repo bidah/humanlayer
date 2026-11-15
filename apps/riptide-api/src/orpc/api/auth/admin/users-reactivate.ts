@@ -3,8 +3,9 @@ import { ORPCError } from '@orpc/server'
 import * as Sentry from '@sentry/node'
 import { Effect } from 'effect'
 
+import { isBillingDisabled } from '../../../../lib/billing-mode'
 import { buildUpgradeRequiredData, canUseStarterCapacity } from '../../../../lib/free-capacity'
-import { syncOrganizationSeatQuantity } from '../../../../lib/seat-sync'
+import { syncSeatsAfterMembershipChange } from '../../../../lib/seat-sync'
 import { logger } from '../../../../logger'
 import { apiBaseForOrganizationAdmin } from '../../../base'
 
@@ -49,7 +50,8 @@ export const adminReactivateUserProcedure = apiBaseForOrganizationAdmin.auth.adm
 						}),
 					)
 				: null
-			const isStarter = cache?.priceId === stripe.prices.starter
+			// Billing off: no plan, so no Starter capacity limit.
+			const isStarter = !isBillingDisabled(stripe) && cache?.priceId === stripe.prices.starter
 
 			if (isStarter) {
 				const [activeMembers, pendingInvitations] = await Promise.all([
@@ -67,7 +69,7 @@ export const adminReactivateUserProcedure = apiBaseForOrganizationAdmin.auth.adm
 			stage = 'workos_reactivation'
 			await workos.userManagement.reactivateOrganizationMembership(membership.id)
 			stage = 'seat_sync_after_reactivation'
-			await syncOrganizationSeatQuantity(
+			await syncSeatsAfterMembershipChange(
 				{ organizationId: auth.organizationId, reason: 'first_party_membership_mutation' },
 				{ workosService: workos, stripeService: stripe, db },
 			)

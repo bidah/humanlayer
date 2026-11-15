@@ -153,6 +153,7 @@ export function LauncherV3ComposerShellDemo() {
 						isDesktopApp
 						onSelectHost={setHostId}
 						onOpenDaemonSettings={() => {}}
+						onCreateCloudHost={() => {}}
 						onLaunchDesktopApp={() => {}}
 						onDownloadDesktopApp={() => {}}
 						onBlur={() => {}}

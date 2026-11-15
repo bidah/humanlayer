@@ -1,9 +1,11 @@
 import type { PrStatusKey } from '@humanlayer/streams/pr-status'
-import { Config, Context, Data, Duration, Effect, type Fiber, Layer, Redacted } from 'effect'
+import { Clock, Config, Context, Data, Duration, Effect, type Fiber, Layer, Redacted } from 'effect'
 import type { HttpClient } from 'effect/http/HttpClient'
 import { importPKCS8 } from 'jose'
 
 import { Sentry } from '../../../instrument'
+import { backgroundQueueEnabled, dispatchBackgroundJob } from '../../../platform/background-jobs'
+import { trackBackgroundFiber } from '../../../platform/request-scope'
 import type { PostgresDb } from '../postgres/postgres-db.service'
 import { PrStatusStream } from '../pr-status-stream/pr-status-stream.service'
 import { getOrRefreshGitHubInstallationToken, signGitHubAppJwt } from './github.auth'
@@ -186,6 +188,7 @@ export const GitHubServiceLive = Layer.effect(
 		const signingKey = yield* importGitHubAppPrivateKey(privateKey)
 		const scope = yield* Effect.scope
 		const pendingRefreshes = new Map<string, Fiber.Fiber<void>>()
+		const queuedRefreshes = new Map<string, number>()
 
 		void appId
 
@@ -336,6 +339,27 @@ export const GitHubServiceLive = Layer.effect(
 			Effect.gen(function* () {
 				const id = branchEventKey(event)
 				if (pendingRefreshes.has(id)) return
+				// Workers with the background queue: the delay rides on the queue's delivery delay
+				// instead of a sleeping fiber that waitUntil would cut off. Bursts are coalesced per
+				// isolate for the delay window; a duplicate that slips through only refreshes twice.
+				if (backgroundQueueEnabled()) {
+					const now = yield* Clock.currentTimeMillis
+					if ((queuedRefreshes.get(id) ?? 0) > now) return
+					for (const [key, until] of queuedRefreshes) if (until <= now) queuedRefreshes.delete(key)
+					queuedRefreshes.set(id, now + Duration.toMillis(mergeStateRefreshDelay))
+					yield* Effect.promise(() =>
+						dispatchBackgroundJob(
+							'github.refresh-merge-state',
+							{
+								installationId: event.installationId,
+								repoFullName: event.repoFullName,
+								branch: event.branch,
+							},
+							{ delaySeconds: Duration.toSeconds(mergeStateRefreshDelay), inProcess: () => undefined },
+						),
+					)
+					return
+				}
 				const context = yield* Effect.context<PostgresDb | HttpClient | PrStatusStream>()
 				const fiber = yield* Effect.forkIn(
 					Effect.sleep(mergeStateRefreshDelay).pipe(
@@ -360,6 +384,9 @@ export const GitHubServiceLive = Layer.effect(
 					scope,
 				)
 				pendingRefreshes.set(id, fiber)
+				// Workers: the delayed refresh outlives the webhook request that scheduled it; register it
+				// with that request's waitUntil (~30 s budget covers the default 15 s delay). No-op on Node.
+				trackBackgroundFiber(fiber)
 			})
 
 		return GitHubService.of({

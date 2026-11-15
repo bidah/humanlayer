@@ -10,6 +10,7 @@ import { ExperimentAnalyticsService } from '../../../../effects/services/experim
 import { mapPostgresErrorToResponse } from '../../../../effects/services/postgres/error-mapping'
 import { PostgresDb } from '../../../../effects/services/postgres/postgres-db.service'
 import { Sentry } from '../../../../instrument'
+import { trackBackgroundFiber } from '../../../../platform/request-scope'
 import { effectOrpcBaseOrganizationRequired } from '../../../effect-base'
 
 const ORG_DEFAULTS = {
@@ -203,7 +204,11 @@ export const updateUserSettingsEffectProcedure = effectOrpcBaseOrganizationRequi
 					assignedVariant: row.projects_v2_assigned_variant,
 					assignedAt: Number(row.projects_v2_assigned_at),
 				})
-				.pipe(Effect.forkDetach({ startImmediately: true }))
+				.pipe(
+					Effect.forkDetach({ startImmediately: true }),
+					// Workers: keep the request alive (waitUntil) for delivery; no-op on Node.
+					Effect.tap((fiber) => Effect.sync(() => trackBackgroundFiber(fiber))),
+				)
 		}
 
 		return {

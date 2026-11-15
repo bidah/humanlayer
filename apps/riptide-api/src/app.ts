@@ -12,6 +12,7 @@ import { jwksCache } from './auth/jwks-cache'
 import { db, dbReadReplica } from './db/db'
 import { appRuntime } from './effects/app-runtime'
 import { AccessRequestService } from './effects/services/access-request/access-request.service'
+import { createBillingDisabledStripeService, isBillingDisabled, isStripeConfigured } from './lib/billing-mode'
 import {
 	getResendApiKey,
 	getResendWebhookSecret,
@@ -19,18 +20,21 @@ import {
 	getStripePriceStarter,
 	getStripeSecretKey,
 	getStripeWebhookSecret,
-	requireEnvironment,
 } from './lib/environment'
 import { getJiraClientId, getJiraClientSecret, getJiraOAuthRedirectUrl } from './lib/jira'
 import { JiraService } from './lib/jira-service'
+import { lazyInstance } from './lib/lazy-instance'
 import { getLinearClientId, getLinearClientSecret, getLinearOAuthRedirectUrl } from './lib/linear'
 import { LinearService } from './lib/linear-service'
+import { createObjectStorage } from './lib/object-storage'
 import { requestBodyLimit } from './lib/request-body-limit'
-import { S3Service } from './lib/s3-service'
 import { StripeService } from './lib/stripe-service'
 import { logger } from './logger'
 import { apiHandler, daemonApiHandler } from './orpc'
+import { isCloudflareWorker } from './platform/runtime'
+import { getOptionalWorkerEnv } from './platform/worker-env'
 import { registerBillingCheckoutCompletionRoutes } from './routes/billing-checkout-completion'
+import { registerR2ObjectStorageRoutes } from './routes/r2-object-storage'
 import { registerGitHubSetupCallbackRoute, registerGitHubWebhookRoute } from './webhooks/github'
 import { registerJiraOAuthCallbackRoute } from './webhooks/jira'
 import { registerLinearOAuthCallbackRoute } from './webhooks/linear'
@@ -52,27 +56,41 @@ app.onError((err, c) => {
 	return c.json({ error: 'Internal Server Error' }, 500)
 })
 
+// On Cloudflare Workers module scope must not perform I/O (no endless refresh loop: the JWT
+// validator refreshes the JWKS on a key miss) and the Worker must boot with optional integrations
+// unconfigured, so integration clients are built on first use there. Node keeps the eager,
+// fail-fast construction below.
+const onWorkers = isCloudflareWorker()
+const eager = { eager: !onWorkers }
+
 // Start JWKS cache refresh loop
-void jwksCache.start()
+if (!onWorkers) void jwksCache.start()
 
 // Create service instances at startup (singletons per process)
-const s3Service = new S3Service(
-	requireEnvironment('S3_ARTIFACTS_BUCKET'),
-	requireEnvironment('S3_ARTIFACTS_REGION', 'us-east-1'),
-	process.env.S3_ARTIFACTS_ENDPOINT,
-	process.env.S3_ACCESS_KEY_ID && process.env.S3_SECRET_ACCESS_KEY
-		? { accessKeyId: process.env.S3_ACCESS_KEY_ID, secretAccessKey: process.env.S3_SECRET_ACCESS_KEY }
-		: undefined,
-)
+const s3Service = lazyInstance(() => createObjectStorage(), eager)
 
-const jiraService = new JiraService(getJiraClientId(), getJiraClientSecret(), db, getJiraOAuthRedirectUrl())
-const linearService = new LinearService(getLinearClientId(), getLinearClientSecret(), db, getLinearOAuthRedirectUrl())
-const stripeService = new StripeService(new Stripe(getStripeSecretKey()), getStripeWebhookSecret(), {
-	billingKvRuntime: appRuntime,
-	starterPriceId: getStripePriceStarter(),
-	proPriceId: getStripePricePro(),
-})
-const resend = new Resend(getResendApiKey())
+const jiraService = lazyInstance(
+	() => new JiraService(getJiraClientId(), getJiraClientSecret(), db, getJiraOAuthRedirectUrl()),
+	eager,
+)
+const linearService = lazyInstance(
+	() => new LinearService(getLinearClientId(), getLinearClientSecret(), db, getLinearOAuthRedirectUrl()),
+	eager,
+)
+// Without STRIPE_SECRET_KEY the deployment runs with billing off (see lib/billing-mode.ts).
+const stripeService = isStripeConfigured()
+	? lazyInstance(
+			() =>
+				new StripeService(new Stripe(getStripeSecretKey()), getStripeWebhookSecret(), {
+					billingKvRuntime: appRuntime,
+					starterPriceId: getStripePriceStarter(),
+					proPriceId: getStripePricePro(),
+				}),
+			eager,
+		)
+	: createBillingDisabledStripeService()
+const billingDisabled = () => isBillingDisabled(stripeService)
+const resend = lazyInstance(() => new Resend(getResendApiKey()), eager)
 /**
  * App-runtime-backed facade for the WorkOS webhook's access-request backfill. The
  * webhook is not an oRPC procedure, so it can't bind to `appRuntime` the way Effect
@@ -120,15 +138,28 @@ app.get('/health', async (c) => {
 	}
 })
 
-registerStripeWebhookRoute(app, { appRuntime })
+registerStripeWebhookRoute(app, { appRuntime, billingDisabled })
 registerWorkosWebhookRoute(app, {
 	workosService: workosSdkAdapter,
 	stripeService,
 	db,
 	backfillAccessRequestRequesterUserId,
 })
-registerResendWebhookRoute(app, { resend, webhookSecret: getResendWebhookSecret(), logger })
-registerBillingCheckoutCompletionRoutes(app)
+// On Workers the secret is read per request so a missing value fails only this webhook, not boot.
+registerResendWebhookRoute(
+	app,
+	onWorkers
+		? {
+				resend,
+				get webhookSecret() {
+					return getResendWebhookSecret()
+				},
+				logger,
+			}
+		: { resend, webhookSecret: getResendWebhookSecret(), logger },
+)
+registerR2ObjectStorageRoutes(app, { getBucket: () => getOptionalWorkerEnv()?.ARTIFACTS })
+registerBillingCheckoutCompletionRoutes(app, { billingDisabled })
 registerGitHubSetupCallbackRoute(app, { appRuntime, logger })
 registerGitHubWebhookRoute(app, { appRuntime, logger })
 registerJiraOAuthCallbackRoute(app, { jiraService, appRuntime, logger })

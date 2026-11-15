@@ -16,9 +16,24 @@ import {
 	ProdCloudOriginMacro,
 	ProdSyncOriginMacro,
 	ProdWorkosClientIdMacro,
+	WorkosApiOriginMacro,
 } from './_macros-do-not-import' with { type: 'macro' }
 
 export const BUILD_VERSION = BuildVersionMacro()
+
+const DEFAULT_WORKOS_API_ORIGIN = 'https://api.workos.com'
+const BAKED_WORKOS_API_ORIGIN = WorkosApiOriginMacro()
+
+/**
+ * Origin of the WorkOS API used for device login. HUMANLAYER_WORKOS_URL (the same override the session
+ * SDK honors) wins at runtime, then the build's WORKOS_API_ORIGIN, then api.workos.com.
+ */
+export function resolveWorkosApiOrigin(): string {
+	return (process.env.HUMANLAYER_WORKOS_URL || BAKED_WORKOS_API_ORIGIN || DEFAULT_WORKOS_API_ORIGIN).replace(
+		/\/+$/,
+		'',
+	)
+}
 
 export interface EnvironmentConfig {
 	workosClientId: string

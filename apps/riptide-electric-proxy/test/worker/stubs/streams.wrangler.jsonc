@@ -1,0 +1,7 @@
+// Local-only stub for `wrangler dev` multi-worker sessions. Never deploy this.
+{
+	"name": "humanlayer-streams",
+	"main": "streams-stub.ts",
+	"compatibility_date": "2026-11-04",
+	"vars": { "SSE_EVENTS": "5", "SSE_INTERVAL_MS": "1000" }
+}

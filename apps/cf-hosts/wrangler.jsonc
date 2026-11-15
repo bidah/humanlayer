@@ -1,0 +1,42 @@
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	// Template: account_id (and any ${NAME} placeholder) comes from .env.cloudflare; deploy with the
+	// package scripts or scripts/cloudflare/deploy.ts, which render this file to wrangler.rendered.json.
+	"name": "humanlayer-hosts",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"workers_dev": true,
+	"observability": { "enabled": true },
+	"upload_source_maps": true,
+	"containers": [
+		{
+			// One container application per Worker class. The image is pulled by reference from Docker Hub
+			// (supported by the `default` scheduling policy), so `wrangler deploy` needs no Docker.
+			// It must match the installed @cloudflare/sandbox version: the SDK talks to the control
+			// server baked into this image.
+			"class_name": "HostSandbox",
+			"image": "docker.io/cloudflare/sandbox:0.12.14",
+			"instance_type": "standard-2",
+			"max_instances": 20,
+			"scheduling_policy": "default",
+		},
+	],
+	"durable_objects": {
+		"bindings": [
+			{ "class_name": "HostSandbox", "name": "HOST_SANDBOX" },
+			{ "class_name": "HostRegistry", "name": "HOST_REGISTRY" },
+		],
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["HostSandbox", "HostRegistry"] }],
+	"r2_buckets": [{ "binding": "ARTIFACTS", "bucket_name": "humanlayer-artifacts" }],
+	"vars": {
+		"DAYTONA_API_URL": "${DAYTONA_API_URL}",
+		"E2B_API_URL": "https://api.e2b.app",
+		"E2B_DOMAIN": "e2b.app",
+		"CLOUDFLARE_INSTANCE_TYPE": "standard-2",
+	},
+	// Uploaded from .env.cloudflare by scripts/cloudflare/deploy.ts. DAYTONA_API_KEY and E2B_API_KEY
+	// (and E2B_TEMPLATE) are optional: each enables its provider and is uploaded only when set.
+	"secrets": { "required": ["INTERNAL_SERVICE_SECRET"] },
+}

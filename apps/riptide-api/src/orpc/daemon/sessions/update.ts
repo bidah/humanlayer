@@ -6,7 +6,7 @@ import { tasks } from '@humanlayer/db/tables/tasks'
 import { userSettings } from '@humanlayer/db/tables/user-settings'
 import { resolveEffectiveContextWindow } from '@humanlayer/schemas/effect/model-context'
 import { isStructuredTaskWorkflow } from '@humanlayer/schemas/effect/taskconfiguration'
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import { Clock, Effect } from 'effect'
 
@@ -17,6 +17,7 @@ import { ExperimentAnalyticsService } from '../../../effects/services/experiment
 import { Sentry } from '../../../instrument'
 import { buildAttributedPrompt } from '../../../lib/session-prompt-attribution'
 import logger from '../../../logger'
+import { dispatchBackgroundJob } from '../../../platform/background-jobs'
 import { daemonBase, requiresDaemonBillingMiddleware } from '../../base'
 import { checkAutoAdvance } from './check-auto-advance'
 import { mergeModelUsage } from './merge-model-usage'
@@ -417,13 +418,28 @@ export const updateSessionProcedure = daemonBase.sessions.update
 			if (input.status === 'ready_for_input' && txResult.conversationEventsResult.length > 0) {
 				// Chain extraction → auto-advance (extraction must complete first so auto-advance
 				// can read next_step_suggestions for artifact-less transitions)
-				void runExtractionThenAutoAdvanceAsync(
-					db,
-					input.sessionId,
-					context.auth.organizationId,
-					context.auth.userId,
-					txResult.conversationEventsResult,
-					services.effectRuntime,
+				// Workers with the background queue: a job (the LLM call can outlive waitUntil), keyed by
+				// the last assistant message it extracts from. Otherwise in process, as before.
+				const conversationEventsResult = txResult.conversationEventsResult
+				void dispatchBackgroundJob(
+					'session.extract-next-step-then-auto-advance',
+					{
+						sessionId: input.sessionId,
+						organizationId: context.auth.organizationId,
+						userId: context.auth.userId,
+						eventId: lastAssistantMessage(conversationEventsResult)?.id ?? null,
+					},
+					{
+						inProcess: () =>
+							runExtractionThenAutoAdvanceAsync(
+								db,
+								input.sessionId,
+								context.auth.organizationId,
+								context.auth.userId,
+								conversationEventsResult,
+								services.effectRuntime,
+							),
+					},
 				)
 			}
 
@@ -512,21 +528,66 @@ async function runExtractionThenAutoAdvanceAsync(
 	effectRuntime: import('../../../effects/app-runtime').AppRuntime,
 ) {
 	// Step 1: Run extraction (has its own try/catch + Sentry — never throws)
-	const lastAssistantMessage = conversationEvents
-		.filter((e) => e.event_type === 'message' && e.role === 'assistant')
-		.at(-1)
+	const lastMessage = lastAssistantMessage(conversationEvents)
 
-	if (lastAssistantMessage?.content && lastAssistantMessage.id) {
-		await runExtractionAsync(
-			db,
-			sessionId,
-			organizationId,
-			userId,
-			lastAssistantMessage.content,
-			lastAssistantMessage.id,
-		)
+	if (lastMessage?.content && lastMessage.id) {
+		await runExtractionAsync(db, sessionId, organizationId, userId, lastMessage.content, lastMessage.id)
 	}
 
 	// Step 2: Run auto-advance (checkAutoAdvance has its own try/catch + Sentry — never throws)
 	await checkAutoAdvance(db, sessionId, organizationId, effectRuntime)
+}
+
+function lastAssistantMessage(events: ConversationEventInputWithId[]) {
+	return events.filter((e) => e.event_type === 'message' && e.role === 'assistant').at(-1)
+}
+
+/**
+ * Queue consumer for `session.extract-next-step-then-auto-advance` (src/jobs/registry.ts).
+ *
+ * Safe to redeliver: it re-reads current state first.
+ * - The payload's event must still be the session's latest root assistant message; if a newer turn
+ *   finished, that turn's own job owns extraction and auto-advance, so this one does nothing.
+ * - Extraction is skipped when that event already carries a next-step suggestion (a previous
+ *   delivery got that far).
+ * - Auto-advance deduplicates on the launched session's label (checkAutoAdvance condition 4).
+ */
+export async function runExtractionThenAutoAdvanceJob(
+	db: PostgresJsDatabase,
+	payload: { sessionId: string; organizationId: string; userId: string; eventId: string | null },
+	effectRuntime: import('../../../effects/app-runtime').AppRuntime,
+): Promise<'ran' | 'superseded'> {
+	const { sessionId, organizationId, userId, eventId } = payload
+	const [latest] = await db
+		.select({
+			id: conversationEvents.id,
+			role: conversationEvents.role,
+			content: conversationEvents.content,
+			event_type: conversationEvents.event_type,
+			next_step_suggestion: conversationEvents.next_step_suggestion,
+		})
+		.from(conversationEvents)
+		.where(
+			and(
+				eq(conversationEvents.session_id, sessionId),
+				eq(conversationEvents.organization_id, organizationId),
+				isNull(conversationEvents.parent_tool_use_id),
+				eq(conversationEvents.event_type, 'message'),
+				eq(conversationEvents.role, 'assistant'),
+			),
+		)
+		.orderBy(desc(conversationEvents.created_at))
+		.limit(1)
+
+	if ((latest?.id ?? null) !== eventId) {
+		logger.info({ sessionId, eventId, latestEventId: latest?.id }, 'Next-step job superseded by a newer turn')
+		return 'superseded'
+	}
+
+	const events: ConversationEventInputWithId[] =
+		latest && !latest.next_step_suggestion
+			? [{ id: latest.id, role: latest.role, content: latest.content, event_type: latest.event_type }]
+			: []
+	await runExtractionThenAutoAdvanceAsync(db, sessionId, organizationId, userId, events, effectRuntime)
+	return 'ran'
 }

@@ -13,6 +13,13 @@ import { isElectron, isTauri } from '@/lib/utils'
 import { useRiptideApi } from '@/orpc/client'
 import { captureAuthReturnToState, consumeAuthReturnTo, storeAuthReturnTo } from '@/utils/auth-route-state'
 
+// Optional WorkOS-compatible API host (e.g. apps/cf-auth). Unset keeps AuthKit's default, api.workos.com over https.
+const workosApiHostname: string | undefined = import.meta.env.VITE_PUBLIC_WORKOS_API_HOSTNAME || undefined
+const workosApiHttps: boolean | undefined = import.meta.env.VITE_PUBLIC_WORKOS_API_HTTPS === 'false' ? false : undefined
+const workosApiPort: number | undefined = import.meta.env.VITE_PUBLIC_WORKOS_API_PORT
+	? Number(import.meta.env.VITE_PUBLIC_WORKOS_API_PORT)
+	: undefined
+
 // Inner component that handles auth enforcement for Pro builds
 function AuthEnforcer({ children }: PropsWithChildren) {
 	const { isLoading, user, organizationId, role, roles, featureFlags } = useAuth()
@@ -184,6 +191,9 @@ export const AuthProvider: FC<PropsWithChildren<{}>> = ({ children }) => {
 	return (
 		<AuthKitProvider
 			clientId={import.meta.env.VITE_PUBLIC_WORKOS_CLIENT_ID}
+			apiHostname={workosApiHostname}
+			https={workosApiHttps}
+			port={workosApiPort}
 			redirectUri={redirectUri}
 			// TODO: set devMode back to `import.meta.env.DEV` once we have a WorkOS custom domain set up
 			devMode={true}

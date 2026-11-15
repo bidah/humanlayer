@@ -1,2 +1,6 @@
 # deps
 node_modules/
+
+# Cloudflare Worker build (wrangler dev / deploy artifacts and local secrets)
+.wrangler/
+.dev.vars*

@@ -1,0 +1,58 @@
+// Cloudflare Worker build of the Electric / Durable Streams auth proxy (`humanlayer-sync`).
+// Entry: src/worker.ts. The Node entry (src/index.ts, Dockerfile) is unchanged.
+//
+// Template: account_id and the ${NAME} placeholders come from .env.cloudflare; the package scripts
+// and scripts/cloudflare/deploy.ts render it to wrangler.rendered.json first.
+// Secrets: see `secrets.required` below (uploaded by scripts/cloudflare/deploy.ts).
+// Local dev: export WRANGLER_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=<postgres url>
+//   and put the secrets in .dev.vars (gitignored) or pass them with --var.
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	"name": "humanlayer-sync",
+	"main": "src/worker.ts",
+	"tsconfig": "./tsconfig.json",
+	"compatibility_date": "2026-11-04",
+	// nodejs_compat (with this date) also turns on nodejs_compat_populate_process_env, so vars and
+	// secrets are visible on process.env before module evaluation.
+	// global_fetch_strictly_public: lets this Worker fetch sibling Workers on the same account by their
+	// public workers.dev URL (the WorkOS-compatible auth service); without it Cloudflare answers 404 (error 1042).
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"workers_dev": true,
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	},
+	// Node-only SDKs -> Worker shims. Every `Sentry.*` call site keeps working (as a no-op); the
+	// WorkOS SDK and undici pools are never constructed on the Worker (see src/worker/*-shim.ts).
+	"alias": {
+		"@workos-inc/node": "./src/worker/workos-shim.ts",
+		"undici": "./src/worker/undici-shim.ts",
+		"@sentry/node": "./src/worker/sentry-shim.ts",
+		"@sentry/core": "./src/worker/sentry-shim.ts",
+		"@sentry/effect/server": "./src/worker/sentry-shim.ts"
+	},
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "${HYPERDRIVE_ID}"
+		}
+	],
+	// Upstreams are reachable only through these bindings. Requests the proxy addresses to
+	// ELECTRIC_SHAPE_URL's origin go to ELECTRIC, to DURABLE_STREAMS_ORIGIN's origin go to STREAMS.
+	"services": [
+		{ "binding": "ELECTRIC", "service": "humanlayer-electric" },
+		{ "binding": "STREAMS", "service": "humanlayer-streams" }
+	],
+	"vars": {
+		"ELECTRIC_SHAPE_URL": "http://humanlayer-electric/v1/shape",
+		"DURABLE_STREAMS_ORIGIN": "http://humanlayer-streams",
+		"LOG_LEVEL": "info",
+		"SENTRY_ENVIRONMENT": "cloudflare",
+		// The WorkOS-compatible auth service (default: the humanlayer-auth Worker; see
+		// scripts/cloudflare/config.ts). User JWTs are verified against its JWKS.
+		"WORKOS_CLIENT_ID": "${WORKOS_CLIENT_ID}",
+		"WORKOS_API_HOSTNAME": "${WORKOS_API_HOSTNAME}",
+		"WORKOS_REDIRECT_URI": "${WORKOS_REDIRECT_URI}"
+	},
+	"secrets": { "required": ["ELECTRIC_SECRET", "RIPTIDE_DAEMON_TOKEN_PUBLIC_KEY"] }
+}

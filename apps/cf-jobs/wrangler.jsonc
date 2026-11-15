@@ -1,0 +1,24 @@
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	// Template: account_id (and any ${NAME} placeholder) comes from .env.cloudflare; deploy with the
+	// package scripts or scripts/cloudflare/deploy.ts, which render this file to wrangler.rendered.json.
+	"name": "humanlayer-jobs",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-11-04",
+	// postgres.js needs node:net/tls/crypto shims.
+	"compatibility_flags": ["nodejs_compat"],
+	// Cron-only Worker: no HTTP surface.
+	"workers_dev": false,
+	"preview_urls": false,
+	"observability": { "enabled": true },
+	"triggers": {
+		// Must match SWEEPER_CRON and MAINTENANCE_CRON in src/index.ts.
+		"crons": ["* * * * *", "17 4 * * *"],
+	},
+	"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "${HYPERDRIVE_ID}" }],
+	// The cloud host provisioner, for the reconcile pass (src/cloud-hosts-reconcile.ts).
+	"services": [{ "binding": "HOSTS", "service": "humanlayer-hosts" }],
+	// Uploaded from .env.cloudflare by scripts/cloudflare/deploy.ts. Authenticates the reconcile pass
+	// to humanlayer-hosts.
+	"secrets": { "required": ["INTERNAL_SERVICE_SECRET"] },
+}

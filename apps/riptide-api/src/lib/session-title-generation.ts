@@ -1,10 +1,12 @@
 import { generateSessionTitle } from '@humanlayer/ai/generate-session-title'
 import { sessions } from '@humanlayer/db/tables/sessions'
+import { tasks } from '@humanlayer/db/tables/tasks'
 import { and, eq, isNull } from 'drizzle-orm'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 
 import { Sentry } from '../instrument'
 import logger from '../logger'
+import { dispatchBackgroundJob } from '../platform/background-jobs'
 import { createRiptideReliableLanguageModel } from './reliable-language-model'
 
 export interface SessionTitleGenerationParams {
@@ -27,14 +29,23 @@ export function runSessionTitleGenerationAsync(
 	db: PostgresJsDatabase,
 	{ sessionId, organizationId, userId, prompt, ticketId, taskName }: SessionTitleGenerationParams,
 ) {
-	const generation = generateAndPersistSessionTitle(db, {
-		sessionId,
-		organizationId,
-		userId,
-		prompt,
-		ticketId,
-		taskName,
-	})
+	// Workers with the background queue: a `session.generate-title` job (the LLM call can outlive
+	// waitUntil). Otherwise in process, as before (tracked by waitUntil on Workers; no-op on Node).
+	const generation = dispatchBackgroundJob(
+		'session.generate-title',
+		{ sessionId, organizationId, userId },
+		{
+			inProcess: () =>
+				generateAndPersistSessionTitle(db, {
+					sessionId,
+					organizationId,
+					userId,
+					prompt,
+					ticketId,
+					taskName,
+				}),
+		},
+	)
 	pendingSessionTitleGenerations.add(generation)
 	void generation.finally(() => pendingSessionTitleGenerations.delete(generation))
 	return generation
@@ -73,4 +84,49 @@ async function generateAndPersistSessionTitle(
 			extra: { sessionId },
 		})
 	}
+}
+
+/**
+ * Queue consumer for `session.generate-title` (src/jobs/registry.ts). Re-reads the session so a
+ * redelivered or late job only acts if the session still exists and is still untitled, and lets
+ * failures throw so the queue retries them (then dead-letters).
+ */
+export async function generateSessionTitleFromStoredPrompt(
+	db: PostgresJsDatabase,
+	{ sessionId, organizationId, userId }: { sessionId: string; organizationId: string; userId: string },
+): Promise<'generated' | 'skipped'> {
+	const [session] = await db
+		.select({ title: sessions.title, prompt: sessions.prompt, ticketId: tasks.ticket_id, taskName: tasks.name })
+		.from(sessions)
+		.leftJoin(tasks, eq(tasks.id, sessions.task_id))
+		.where(
+			and(
+				eq(sessions.id, sessionId),
+				eq(sessions.organization_id, organizationId),
+				eq(sessions.created_by, userId),
+			),
+		)
+		.limit(1)
+	if (!session || session.title || !session.prompt?.trim()) {
+		logger.debug({ sessionId }, 'AI session title job skipped (session missing, titled, or without prompt)')
+		return 'skipped'
+	}
+
+	const title = await generateSessionTitle(session.prompt, session.ticketId ?? null, session.taskName, {
+		model: createRiptideReliableLanguageModel('haiku'),
+	})
+	const [updated] = await db
+		.update(sessions)
+		.set({ title })
+		.where(
+			and(
+				eq(sessions.id, sessionId),
+				eq(sessions.organization_id, organizationId),
+				eq(sessions.created_by, userId),
+				isNull(sessions.title),
+			),
+		)
+		.returning({ id: sessions.id })
+	if (updated) logger.info({ sessionId, title }, 'AI session title generated')
+	return updated ? 'generated' : 'skipped'
 }

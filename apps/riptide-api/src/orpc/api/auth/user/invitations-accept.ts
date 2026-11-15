@@ -3,7 +3,7 @@ import type { Invitation } from '@workos-inc/node'
 import { eq } from 'drizzle-orm'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 
-import { syncOrganizationSeatQuantity } from '../../../../lib/seat-sync'
+import { syncSeatsAfterMembershipChange } from '../../../../lib/seat-sync'
 import { logger } from '../../../../logger'
 import { apiBaseNoOrg } from '../../../base'
 
@@ -76,7 +76,7 @@ export const acceptUserInvitationProcedure = apiBaseNoOrg.auth.user.invitations.
 					}
 					await workos.userManagement.acceptInvitation(invitation.id)
 					const organizationId = await getLocalOrganizationId(db, workosOrganizationId)
-					await syncOrganizationSeatQuantity(
+					await syncSeatsAfterMembershipChange(
 						{ organizationId, reason: 'first_party_membership_mutation' },
 						{ workosService: workos, stripeService: stripe, db },
 					)

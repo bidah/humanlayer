@@ -1,0 +1,30 @@
+{
+  "name": "@humanlayer/cf-hosts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun ../../scripts/cloudflare/wrangler.ts dev",
+    "deploy": "bun ../../scripts/cloudflare/wrangler.ts deploy",
+    "build:cli": "bun run scripts/build-cli.ts",
+    "publish:cli": "bun run scripts/build-cli.ts --upload",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "0.3.7",
+    "@cloudflare/sandbox": "0.12.14",
+    "@daytonaio/sdk": "0.230.0",
+    "e2b": "2.63.0",
+    "hono": "^4.10.7",
+    "jose": "^6.1.3",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "wrangler": "4.158.0",
+    "@cloudflare/workers-types": "5.20261104.1",
+    "typescript": "7.0.2",
+    "@humanlayer/typescript-config": "workspace:*",
+    "vitest": "catalog:"
+  }
+}

@@ -2,7 +2,7 @@ import { ORPCError } from '@orpc/server'
 import * as Sentry from '@sentry/node'
 import type { OrganizationMembership } from '@workos-inc/node'
 
-import { syncOrganizationSeatQuantity } from '../../../../lib/seat-sync'
+import { syncSeatsAfterMembershipChange } from '../../../../lib/seat-sync'
 import { logger } from '../../../../logger'
 import { apiBaseForOrganizationAdmin } from '../../../base'
 
@@ -57,7 +57,7 @@ export const adminDeactivateUserProcedure = apiBaseForOrganizationAdmin.auth.adm
 			stage = 'workos_deactivation'
 			await workos.userManagement.deactivateOrganizationMembership(membership.id)
 			stage = 'seat_sync_after_deactivation'
-			await syncOrganizationSeatQuantity(
+			await syncSeatsAfterMembershipChange(
 				{ organizationId: auth.organizationId, reason: 'first_party_membership_mutation' },
 				{ workosService: workos, stripeService: stripe, db },
 			)

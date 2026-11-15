@@ -1,0 +1,31 @@
+{
+  "name": "@humanlayer/cf-auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun ../../scripts/cloudflare/wrangler.ts dev",
+    "deploy": "bun ../../scripts/cloudflare/wrangler.ts deploy",
+    "migrate:local": "bun ../../scripts/cloudflare/wrangler.ts d1 migrations apply humanlayer-auth --local",
+    "migrate:remote": "bun ../../scripts/cloudflare/wrangler.ts d1 migrations apply humanlayer-auth --remote",
+    "secrets:generate": "bun scripts/generate-secrets.ts",
+    "secrets:put": "bun scripts/put-secrets.ts",
+    "bootstrap": "bun scripts/bootstrap.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261104.1",
+    "@humanlayer/schemas": "workspace:*",
+    "@humanlayer/typescript-config": "workspace:*",
+    "@workos-inc/authkit-js": "0.20.2",
+    "@workos-inc/node": "10.11.0",
+    "effect": "catalog:",
+    "jose": "6.2.9",
+    "typescript": "7.0.2",
+    "vitest": "catalog:",
+    "workos-node-v7": "npm:@workos-inc/node@7.82.0",
+    "wrangler": "4.158.0"
+  }
+}

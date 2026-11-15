@@ -421,6 +421,9 @@ export function addSpanStackTrace(): () => string | undefined {
     stackTraceLimit?: number;
   };
   const limit = ErrorConstructor.stackTraceLimit;
+  // Like Effect's own span stack capture: skip when stack traces are disabled (the Cloudflare
+  // Worker entry sets the limit to 0 while modules evaluate to stay within the startup CPU budget).
+  if (limit === 0) return () => undefined;
   ErrorConstructor.stackTraceLimit = 3;
   const traceError = new Error();
   ErrorConstructor.stackTraceLimit = limit;

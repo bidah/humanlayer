@@ -1,0 +1,14 @@
+{
+	"extends": "@humanlayer/typescript-config/base.json",
+	"compilerOptions": {
+		"lib": ["es2023"],
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"types": ["@cloudflare/workers-types"],
+		"declaration": false,
+		"declarationMap": false,
+		"noEmit": true
+	},
+	// scripts/ runs under Bun (Bun types conflict with workers-types); it is checked by running it.
+	"include": ["src", "test", "vitest.config.ts"]
+}

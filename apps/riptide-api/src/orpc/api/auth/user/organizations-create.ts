@@ -6,6 +6,7 @@ import { Effect } from 'effect'
 
 import { refreshStripeBillingCache } from '../../../../effects/services/billing/billing-access.service'
 import { OnboardingService } from '../../../../effects/services/onboarding/onboarding.service'
+import { isBillingDisabled } from '../../../../lib/billing-mode'
 import {
 	BLOCK_NEW_ORG_CREATION_MESSAGE,
 	isDevEnvironment,
@@ -30,6 +31,9 @@ export const createOrganizationProcedure = apiBaseNoOrg.auth.user.organizations.
 			auth,
 			services: { workos, db, stripe },
 		} = context
+
+		// Decided before any side effect so a misconfiguration (no key, enforcement on) fails cleanly.
+		const billingDisabled = isBillingDisabled(stripe)
 
 		if (isNewOrgCreationBlocked()) {
 			// HumanLayer staff (humanlayer.dev / humanlayer.com) can still create
@@ -111,128 +115,157 @@ export const createOrganizationProcedure = apiBaseNoOrg.auth.user.organizations.
 			throw errors.INTERNAL_SERVER_ERROR()
 		}
 
-		let provisioning: ProvisioningStepResult
-		let provisionedCustomerId: string | null = null
-		let createdStripeCustomer = false
-		try {
-			const user = await workos.userManagement.getUser(auth.userId)
-			const customer = await stripe.ensureStripeCustomerForOrg({
-				organizationId: dbOrg.id,
-				organizationName: dbOrg.name,
-				adminEmail: user.email,
-				existingCustomerId: dbOrg.stripe_customer_id,
-			})
-
-			provisionedCustomerId = customer.customerId
-			createdStripeCustomer = customer.created
-
-			const [updatedOrg] = await db
-				.update(organizations)
-				.set({ stripe_customer_id: customer.customerId })
-				.where(eq(organizations.id, dbOrg.id))
-				.returning()
-
-			if (!updatedOrg) {
-				throw new Error('Failed to persist Stripe customer id on organization')
+		// Billing off (no Stripe account): the organization is created without a Stripe customer or
+		// subscription; nothing to provision or compensate.
+		let provisioning: ProvisioningStepResult | null = null
+		if (billingDisabled) {
+			// The sync proxy authorizes on the `internal_org_id` access-token claim, which the identity
+			// provider derives from this organization metadata. With billing on it is written together
+			// with the Stripe customer id below; with billing off it still has to be written.
+			try {
+				await workos.organizations.updateOrganization({
+					organization: workosOrg.id,
+					metadata: {
+						internal_org_id: dbOrg.id,
+					},
+				})
+			} catch (error) {
+				logger.error(
+					{ err: error, organizationId: dbOrg.id, workosOrganizationId: workosOrg.id },
+					'Failed to store internal_org_id on the identity provider organization',
+				)
+				throw errors.INTERNAL_SERVER_ERROR()
 			}
-
-			dbOrg = updatedOrg
-
-			await stripe.ensureBillingOrgMappings({
-				organizationId: dbOrg.id,
-				customerId: customer.customerId,
-			})
-
-			await workos.organizations.updateOrganization({
-				organization: workosOrg.id,
-				stripeCustomerId: customer.customerId,
-				metadata: {
-					internal_org_id: dbOrg.id,
-				},
-			})
-
-			const quantity = await workos.countActiveOrganizationMemberships(workosOrg.id)
-
-			const subscription = await stripe.ensureStarterSubscription({
-				customerId: customer.customerId,
-				quantity,
-			})
-			await context.services.effectRuntime.runPromise(refreshStripeBillingCache(customer.customerId))
-
-			provisioning = {
-				customerId: customer.customerId,
-				createdCustomer: customer.created,
-				subscriptionId: subscription.subscriptionId,
-				createdSubscription: subscription.created,
-			}
-		} catch (error) {
-			logger.error(
-				{
-					err: error,
+		}
+		if (!billingDisabled) {
+			let provisionedCustomerId: string | null = null
+			let createdStripeCustomer = false
+			try {
+				const user = await workos.userManagement.getUser(auth.userId)
+				const customer = await stripe.ensureStripeCustomerForOrg({
 					organizationId: dbOrg.id,
-					workosOrganizationId: workosOrg.id,
-					stripeCustomerId: provisionedCustomerId,
-				},
-				'Organization billing provisioning failed; starting compensation cleanup',
-			)
+					organizationName: dbOrg.name,
+					adminEmail: user.email,
+					existingCustomerId: dbOrg.stripe_customer_id,
+				})
 
-			if (provisionedCustomerId) {
-				try {
-					await db
-						.update(organizations)
-						.set({ stripe_customer_id: null })
-						.where(
-							and(
-								eq(organizations.id, dbOrg.id),
-								eq(organizations.stripe_customer_id, provisionedCustomerId),
-							),
+				provisionedCustomerId = customer.customerId
+				createdStripeCustomer = customer.created
+
+				const [updatedOrg] = await db
+					.update(organizations)
+					.set({ stripe_customer_id: customer.customerId })
+					.where(eq(organizations.id, dbOrg.id))
+					.returning()
+
+				if (!updatedOrg) {
+					throw new Error('Failed to persist Stripe customer id on organization')
+				}
+
+				dbOrg = updatedOrg
+
+				await stripe.ensureBillingOrgMappings({
+					organizationId: dbOrg.id,
+					customerId: customer.customerId,
+				})
+
+				await workos.organizations.updateOrganization({
+					organization: workosOrg.id,
+					stripeCustomerId: customer.customerId,
+					metadata: {
+						internal_org_id: dbOrg.id,
+					},
+				})
+
+				const quantity = await workos.countActiveOrganizationMemberships(workosOrg.id)
+
+				const subscription = await stripe.ensureStarterSubscription({
+					customerId: customer.customerId,
+					quantity,
+				})
+				await context.services.effectRuntime.runPromise(refreshStripeBillingCache(customer.customerId))
+
+				provisioning = {
+					customerId: customer.customerId,
+					createdCustomer: customer.created,
+					subscriptionId: subscription.subscriptionId,
+					createdSubscription: subscription.created,
+				}
+			} catch (error) {
+				logger.error(
+					{
+						err: error,
+						organizationId: dbOrg.id,
+						workosOrganizationId: workosOrg.id,
+						stripeCustomerId: provisionedCustomerId,
+					},
+					'Organization billing provisioning failed; starting compensation cleanup',
+				)
+
+				if (provisionedCustomerId) {
+					try {
+						await db
+							.update(organizations)
+							.set({ stripe_customer_id: null })
+							.where(
+								and(
+									eq(organizations.id, dbOrg.id),
+									eq(organizations.stripe_customer_id, provisionedCustomerId),
+								),
+							)
+					} catch (cleanupError) {
+						logger.error(
+							{ err: cleanupError, organizationId: dbOrg.id },
+							'Failed to clear stripe_customer_id during compensation cleanup',
 						)
+						Sentry.captureException(cleanupError, {
+							tags: {
+								error_type: 'organization_provisioning_cleanup',
+								operation: 'clear_stripe_customer_id',
+							},
+							extra: { organizationId: dbOrg.id, workosOrganizationId: workosOrg.id },
+						})
+					}
+				}
+
+				try {
+					await db.delete(organizations).where(eq(organizations.id, dbOrg.id))
 				} catch (cleanupError) {
 					logger.error(
 						{ err: cleanupError, organizationId: dbOrg.id },
-						'Failed to clear stripe_customer_id during compensation cleanup',
+						'Failed to roll back local organization during compensation cleanup',
 					)
 					Sentry.captureException(cleanupError, {
 						tags: {
 							error_type: 'organization_provisioning_cleanup',
-							operation: 'clear_stripe_customer_id',
+							operation: 'rollback_local_organization',
 						},
 						extra: { organizationId: dbOrg.id, workosOrganizationId: workosOrg.id },
 					})
 				}
-			}
 
-			try {
-				await db.delete(organizations).where(eq(organizations.id, dbOrg.id))
-			} catch (cleanupError) {
-				logger.error(
-					{ err: cleanupError, organizationId: dbOrg.id },
-					'Failed to roll back local organization during compensation cleanup',
-				)
-				Sentry.captureException(cleanupError, {
-					tags: { error_type: 'organization_provisioning_cleanup', operation: 'rollback_local_organization' },
-					extra: { organizationId: dbOrg.id, workosOrganizationId: workosOrg.id },
+				if (createdStripeCustomer && provisionedCustomerId) {
+					try {
+						await stripe.deleteCustomer(provisionedCustomerId)
+					} catch (cleanupError) {
+						logger.error(
+							{ err: cleanupError, customerId: provisionedCustomerId },
+							'Failed to delete newly created Stripe customer during compensation cleanup',
+						)
+						Sentry.captureException(cleanupError, {
+							tags: {
+								error_type: 'organization_provisioning_cleanup',
+								operation: 'delete_stripe_customer',
+							},
+							extra: { organizationId: dbOrg.id, customerId: provisionedCustomerId },
+						})
+					}
+				}
+
+				throw errors.INTERNAL_SERVER_ERROR({
+					data: { message: 'Failed to provision billing for organization creation' },
 				})
 			}
-
-			if (createdStripeCustomer && provisionedCustomerId) {
-				try {
-					await stripe.deleteCustomer(provisionedCustomerId)
-				} catch (cleanupError) {
-					logger.error(
-						{ err: cleanupError, customerId: provisionedCustomerId },
-						'Failed to delete newly created Stripe customer during compensation cleanup',
-					)
-					Sentry.captureException(cleanupError, {
-						tags: { error_type: 'organization_provisioning_cleanup', operation: 'delete_stripe_customer' },
-						extra: { organizationId: dbOrg.id, customerId: provisionedCustomerId },
-					})
-				}
-			}
-
-			throw errors.INTERNAL_SERVER_ERROR({
-				data: { message: 'Failed to provision billing for organization creation' },
-			})
 		}
 
 		try {
@@ -250,7 +283,10 @@ export const createOrganizationProcedure = apiBaseNoOrg.auth.user.organizations.
 		if (input.inviteEmails && input.inviteEmails.length > 0) {
 			const activeMembers = await workos.countActiveOrganizationMemberships(workosOrg.id)
 			const pendingInvitations = await workos.countPendingInvitations({ workosOrganizationId: workosOrg.id })
-			const remainingInviteCapacity = getStarterFreeCapacityRemaining({ activeMembers, pendingInvitations })
+			// Billing off: no Starter plan, so invitations are not capped by its free capacity.
+			const remainingInviteCapacity = billingDisabled
+				? input.inviteEmails.length
+				: getStarterFreeCapacityRemaining({ activeMembers, pendingInvitations })
 			const emailsToInvite = input.inviteEmails.slice(0, remainingInviteCapacity)
 			failedInvites.push(...input.inviteEmails.slice(remainingInviteCapacity))
 
@@ -277,16 +313,20 @@ export const createOrganizationProcedure = apiBaseNoOrg.auth.user.organizations.
 			})
 		}
 
-		logger.info(
-			{
-				organizationId: dbOrg.id,
-				stripeCustomerId: provisioning.customerId,
-				stripeSubscriptionId: provisioning.subscriptionId,
-				createdStripeCustomer: provisioning.createdCustomer,
-				createdStripeSubscription: provisioning.createdSubscription,
-			},
-			'Created organization with Stripe Starter billing provisioning',
-		)
+		if (provisioning) {
+			logger.info(
+				{
+					organizationId: dbOrg.id,
+					stripeCustomerId: provisioning.customerId,
+					stripeSubscriptionId: provisioning.subscriptionId,
+					createdStripeCustomer: provisioning.createdCustomer,
+					createdStripeSubscription: provisioning.createdSubscription,
+				},
+				'Created organization with Stripe Starter billing provisioning',
+			)
+		} else {
+			logger.info({ organizationId: dbOrg.id }, 'Created organization without billing (Stripe is not configured)')
+		}
 
 		// Fire-and-forget onboarding enrollment on the shared app Effect runtime.
 		// `runFork` returns synchronously with a background root fiber, so organization
@@ -318,7 +358,7 @@ export const createOrganizationProcedure = apiBaseNoOrg.auth.user.organizations.
 			organizationId: dbOrg.id,
 			workosOrganizationId: workosOrg.id,
 			organizationName: workosOrg.name,
-			stripeCustomerId: provisioning.customerId,
+			stripeCustomerId: provisioning?.customerId,
 			failedInvites,
 		}
 	},

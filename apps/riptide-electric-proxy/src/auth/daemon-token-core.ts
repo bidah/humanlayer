@@ -50,6 +50,8 @@ export interface DaemonTokenClaims {
 	organizationId: string
 	hostId: string
 	createdAt: number
+	/** Minted for a cloud host; revocable (see auth/cloud-host-revocation.ts). */
+	cloudHost?: boolean
 }
 
 const PersistentDaemonTokenPayload = Schema.Struct({
@@ -58,6 +60,7 @@ const PersistentDaemonTokenPayload = Schema.Struct({
 	organizationId: Schema.String,
 	hostId: Schema.String,
 	createdAt: Schema.Number,
+	cloudHost: Schema.optionalKey(Schema.Boolean),
 })
 
 export function parseDaemonTokenClaims(payload: unknown): DaemonTokenClaims | null {

@@ -43,6 +43,8 @@ HumanLayer Cloud runs this code on AWS. [`.claude/skills/self-host-humanlayer/`]
 
 It's a reference, not a supported install: expect to adapt it.
 
+This fork can also run entirely on Cloudflare (Workers, Containers, D1, R2, Queues and a Postgres 18 database such as Neon), deployed with one command and no Docker. [CLOUDFLARE.md](CLOUDFLARE.md) covers the architecture, the first deploy, operations and the known limitations.
+
 
 ⚠️ note - If you use the Docker Compose file as a starter for self hosting, please note that it uses default/simple passwords that should be updated before you deploy.
 

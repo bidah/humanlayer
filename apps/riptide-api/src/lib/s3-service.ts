@@ -8,6 +8,8 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 export interface IS3Service {
 	getPresignedUploadUrl(key: string, contentType: string, expiresInMinutes?: number): Promise<string>
 	getPresignedDownloadUrl(key: string, expiresInMinutes?: number): Promise<string>
+	/** Direct server-side write, when the backend supports it (R2 on Workers). */
+	putObject?(key: string, bytes: Uint8Array, contentType: string): Promise<void>
 }
 
 /**

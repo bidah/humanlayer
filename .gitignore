@@ -97,7 +97,16 @@ logs/
 # Claude plugin skills ship helper scripts that must be versioned
 !apps/riptide-rpi-claude-plugin/**/scripts
 !apps/riptide-rpi-claude-plugin/**/scripts/**
+# Cloudflare fork: helper scripts of the auth service and the cloud host provisioner
+!apps/cf-auth/scripts
+!apps/cf-auth/scripts/**
+!apps/cf-hosts/scripts
+!apps/cf-hosts/scripts/**
+# Source file that the `**/*/logs*` rule above would otherwise hide
+!apps/riptide-api/src/orpc/api/hosts/cloud/logs.effect.ts
 .env*
+# Documented template of .env.cloudflare (placeholders only); the real file stays ignored
+!.env.cloudflare.example
 **/dist/*
 **/bin/*
 # The npm launcher for @humanlayer/cli is source, not build output
@@ -114,3 +123,11 @@ packages/ai/eval-results-agentic/
 .humanlayer/workspace.local.json
 REACT_DOCTOR_ISSUES.json
 .shadow/
+
+# Cloudflare (wrangler) local state and dev secrets
+.wrangler/
+.dev.vars*
+# Effective wrangler configs rendered from wrangler.jsonc + .env.cloudflare (scripts/cloudflare/config.ts)
+wrangler.rendered.json
+# Claude Code session-local scheduler state
+.claude/scheduled_tasks.lock

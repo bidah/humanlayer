@@ -51,6 +51,7 @@ import {
 import { isDesktop } from '@/lib/utils'
 import { useRiptideApi } from '@/orpc/client'
 
+import { CloudHostsSection } from './CloudHostsSection'
 import { buildDaemonLaunchCommand } from './daemon-launch-command'
 import { HostDeleteDialog } from './HostDeleteDialog'
 import { HostUpdateControl } from './HostUpdateControl'
@@ -335,6 +336,8 @@ export function DaemonsSettingsSection() {
 					</div>
 				)}
 			</section>
+
+			<CloudHostsSection />
 
 			{/* Launch Token */}
 			<section>

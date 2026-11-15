@@ -4,6 +4,7 @@ import type { Hono } from 'hono'
 import type { AppRuntime } from '../effects/app-runtime'
 import { StripeService } from '../effects/services/stripe/stripe.service'
 import { Sentry } from '../instrument'
+import { BILLING_NOT_CONFIGURED_MESSAGE } from '../lib/billing-mode'
 import { logger } from '../logger'
 
 const processStripeWebhook = (input: { readonly body: string; readonly signature: string }) =>
@@ -12,8 +13,18 @@ const processStripeWebhook = (input: { readonly body: string; readonly signature
 		return yield* stripe.processWebhook(input)
 	})
 
-export function registerStripeWebhookRoute(app: Hono, deps: { readonly appRuntime: AppRuntime }): void {
+export function registerStripeWebhookRoute(
+	app: Hono,
+	deps: {
+		readonly appRuntime: AppRuntime
+		/** Billing off (no Stripe account): the webhook has nothing to process. */
+		readonly billingDisabled?: () => boolean
+	},
+): void {
 	app.post('/webhooks/stripe', async (c) => {
+		if (deps.billingDisabled?.()) {
+			return c.json({ error: BILLING_NOT_CONFIGURED_MESSAGE }, 503)
+		}
 		const requestId = c.req.header('x-request-id') ?? c.req.header('x-correlation-id')
 		const signature = c.req.header('stripe-signature')
 		if (!signature) {

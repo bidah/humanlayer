@@ -19,6 +19,8 @@ interface ChannelDefaults {
 	app?: string
 	/** The WorkOS client id for device login. */
 	clientId?: string
+	/** Origin of the WorkOS API (or a WorkOS-compatible service) for device login; defaults to api.workos.com. */
+	workos?: string
 }
 
 export type BuiltChannels = Partial<Record<Channel, ChannelDefaults>>
@@ -93,7 +95,7 @@ export function getChannelConfig(
 		api,
 		sync,
 		app,
-		workos: env.HUMANLAYER_WORKOS_URL || DEFAULT_WORKOS_URL,
+		workos: env.HUMANLAYER_WORKOS_URL || base.workos || DEFAULT_WORKOS_URL,
 		clientId: env.HUMANLAYER_WORKOS_CLIENT_ID || base.clientId,
 	}
 }

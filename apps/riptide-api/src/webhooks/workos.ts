@@ -4,7 +4,7 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type { Hono } from 'hono'
 
 import { Sentry } from '../instrument'
-import { syncOrganizationSeatQuantity } from '../lib/seat-sync'
+import { syncSeatsAfterMembershipChange } from '../lib/seat-sync'
 import type { IStripeService } from '../lib/stripe-service'
 import type { WorkosSdkAdapter } from '../lib/workos-service'
 import { logger } from '../logger'
@@ -85,7 +85,7 @@ export function registerWorkosWebhookRoute(app: Hono, deps: WorkosWebhookDeps): 
 				)
 			}
 
-			const result = await syncOrganizationSeatQuantity(
+			const result = await syncSeatsAfterMembershipChange(
 				{ organizationId: organization.id, reason: 'workos_webhook' },
 				{ workosService: deps.workosService, stripeService: deps.stripeService, db: deps.db },
 			)
