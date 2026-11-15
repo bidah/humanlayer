@@ -417,9 +417,8 @@ bun scripts/cloudflare/e2e/cloud-host.ts --provider cloudflare     # or daytona,
 bun scripts/cloudflare/e2e/cloud-host-reconcile.ts --provider cloudflare
 ```
 
-Right after a deploy that included `electric`, the first sync shape request can fail while
-Electric starts (see [Known limitations](#known-limitations)); run the checks again before
-treating that as a regression.
+Right after a deploy that included `electric`, the first sync shape request is slow while
+Electric starts (see [Known limitations](#known-limitations)).
 
 If a cloud host check fails midway, list and delete leftover hosts through the provisioner:
 
@@ -522,10 +521,12 @@ no Stripe customer.
   Postgres, so the first sync after an idle period takes tens of seconds and clients refetch their
   shapes. Deploying `humanlayer-electric` stops the running container: observed on every
   redeploy, the container instance and Electric's replication session ended within about a minute
-  of the deploy (the container application itself is unchanged). Observed after two
-  redeploys: the first shape requests failed (503 "Snapshot timed out while waiting for a table
-  lock", once also a 500) and succeeded when retried; Electric's replication session was up about
-  15 seconds after the first request. The cause of the 503 was not investigated. Large
+  of the deploy (the container application itself is unchanged). Right after a cold start Electric
+  can answer the first shape requests with 503 "Snapshot timed out while waiting for a table
+  lock"; the cause was not investigated. The `humanlayer-electric` Worker retries a 503 up to four
+  times, two seconds apart, before passing it on, so clients see a slow first request rather than
+  an error: with that in place, the first sync check against a cold container passed in 38 seconds
+  (8.5 seconds warm). Large
   workspaces may need `standard-1` (`apps/cf-electric/wrangler.jsonc`).
 - **Deploying `humanlayer-hosts` probably restarts running Cloudflare cloud hosts** **(not
   verified)**: each host's container belongs to a Durable Object, and the Electric container

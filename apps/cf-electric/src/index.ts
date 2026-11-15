@@ -37,6 +37,9 @@ const ELECTRIC_PORT = 3000
 /** How long a request that arrives during a cold start waits for Electric to report `active`. */
 const READY_DEADLINE_MS = 120_000
 const HEALTH_POLL_INTERVAL_MS = 500
+/** How often, and how far apart, a 503 from Electric is retried before it is passed on. */
+const UNAVAILABLE_RETRIES = 4
+const UNAVAILABLE_RETRY_DELAY_MS = 2_000
 /** Header that must carry INTERNAL_SERVICE_SECRET when the Worker is reached over workers.dev. */
 const PUBLIC_ACCESS_HEADER = 'x-humanlayer-internal-secret'
 
@@ -117,7 +120,28 @@ export class ElectricContainer extends Container<Env> {
 				},
 			)
 		}
-		return this.containerFetch(request, ELECTRIC_PORT)
+		// Right after a cold start Electric can answer the first shape requests with 503 while its
+		// first snapshot waits on a table lock ("Snapshot timed out while waiting for a table lock").
+		// Shape requests are reads, so retry here a few times instead of surfacing every cold start
+		// to clients. The request body (small subset queries only) is buffered so it can be resent.
+		const body = request.body ? await request.arrayBuffer() : undefined
+		const send = () =>
+			this.containerFetch(
+				new Request(request.url, {
+					method: request.method,
+					headers: request.headers,
+					body: body && body.byteLength > 0 ? body : undefined,
+				}),
+				ELECTRIC_PORT,
+			)
+		let response = await send()
+		for (let attempt = 1; attempt <= UNAVAILABLE_RETRIES && response.status === 503; attempt++) {
+			await response.body?.cancel()
+			console.warn({ event: 'electric_unavailable_retry', attempt })
+			await new Promise((resolve) => setTimeout(resolve, UNAVAILABLE_RETRY_DELAY_MS))
+			response = await send()
+		}
+		return response
 	}
 
 	/** Starts the container if needed and waits until Electric's health reports `active`. */
