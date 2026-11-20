@@ -46,7 +46,7 @@ describe('background queue consumer', () => {
 			return { result: 'done' }
 		})
 
-		await handleBackgroundQueueBatch({ queue: 'humanlayer-background', messages: [ok, bad] }, () => undefined, run)
+		await handleBackgroundQueueBatch({ queue: 'human-flare-background', messages: [ok, bad] }, () => undefined, run)
 
 		expect(ok.ack).toHaveBeenCalledTimes(1)
 		expect(ok.retry).not.toHaveBeenCalled()

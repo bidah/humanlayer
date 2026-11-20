@@ -1,5 +1,5 @@
 /**
- * Smoke test for the humanlayer-sync Worker (src/worker.ts), run against `wrangler dev` with the
+ * Smoke test for the human-flare-sync Worker (src/worker.ts), run against `wrangler dev` with the
  * stub upstreams in ./stubs, or against a deployment. Not part of `bun run test` (needs a live
  * Worker, a database and secrets).
  *

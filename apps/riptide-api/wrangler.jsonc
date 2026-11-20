@@ -2,7 +2,7 @@
 	"$schema": "../../node_modules/wrangler/config-schema.json",
 	// Template: account_id (and any ${NAME} placeholder) comes from .env.cloudflare; deploy with the
 	// package scripts or scripts/cloudflare/deploy.ts, which render this file to wrangler.rendered.json.
-	"name": "humanlayer-api",
+	"name": "human-flare-api",
 	"main": "src/worker.ts",
 	"compatibility_date": "2026-11-04",
 	// global_fetch_strictly_public: lets this Worker fetch sibling Workers on the same account by their
@@ -22,20 +22,20 @@
 	},
 	"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "${HYPERDRIVE_ID}" }],
 	"kv_namespaces": [{ "binding": "BILLING_KV", "id": "${BILLING_KV_ID}" }],
-	"r2_buckets": [{ "binding": "ARTIFACTS", "bucket_name": "humanlayer-artifacts" }],
+	"r2_buckets": [{ "binding": "ARTIFACTS", "bucket_name": "human-flare-artifacts" }],
 	// HOSTS: the cloud host provisioner (apps/cf-hosts); see src/effects/services/cloud-hosts.
 	// It authenticates the API with the INTERNAL_SERVICE_SECRET secret.
 	"services": [
-		{ "binding": "STREAMS", "service": "humanlayer-streams" },
-		{ "binding": "HOSTS", "service": "humanlayer-hosts" },
+		{ "binding": "STREAMS", "service": "human-flare-streams" },
+		{ "binding": "HOSTS", "service": "human-flare-hosts" },
 	],
 	// Post-response work that can outlive waitUntil (LLM titles / next-step extraction, delayed GitHub
 	// merge-state refresh): see src/platform/background-jobs.ts and src/jobs/. Consumed by this Worker.
 	"queues": {
-		"producers": [{ "binding": "BACKGROUND_QUEUE", "queue": "humanlayer-background" }],
+		"producers": [{ "binding": "BACKGROUND_QUEUE", "queue": "human-flare-background" }],
 		"consumers": [
 			{
-				"queue": "humanlayer-background",
+				"queue": "human-flare-background",
 				// Messages run sequentially per invocation (one DB client each); keep batches small so
 				// LLM-bound jobs are not queued behind each other.
 				"max_batch_size": 4,
@@ -44,7 +44,7 @@
 				// after 3 retries it is dead-lettered.
 				"max_retries": 3,
 				"retry_delay": 10,
-				"dead_letter_queue": "humanlayer-background-dlq",
+				"dead_letter_queue": "human-flare-background-dlq",
 			},
 		],
 	},
@@ -53,9 +53,9 @@
 		"SENTRY_ENVIRONMENT": "cloudflare",
 		"IS_BILLING_ENFORCEMENT_ENABLED": "${IS_BILLING_ENFORCEMENT_ENABLED}",
 		"RIPTIDE_API_ORIGIN": "${API_ORIGIN}",
-		// Routed to the humanlayer-streams Worker via the STREAMS service binding (src/platform/streams-fetch.ts);
+		// Routed to the human-flare-streams Worker via the STREAMS service binding (src/platform/streams-fetch.ts);
 		// the hostname is never resolved.
-		"DURABLE_STREAMS_ORIGIN": "https://humanlayer-streams.internal",
+		"DURABLE_STREAMS_ORIGIN": "https://human-flare-streams.internal",
 		"LOG_LEVEL": "info",
 		"APP_ORIGIN": "${APP_ORIGIN}",
 		"CLOUD_ORIGIN": "${CLOUD_ORIGIN}",
@@ -64,7 +64,7 @@
 		"CLOUD_HOSTS_URL": "${HOSTS_ORIGIN}",
 	},
 	// Uploaded from .env.cloudflare by scripts/cloudflare/deploy.ts. The WORKOS_* values default to
-	// the humanlayer-auth Worker (see scripts/cloudflare/config.ts). Optional integration keys
+	// the human-flare-auth Worker (see scripts/cloudflare/config.ts). Optional integration keys
 	// (Stripe, Resend, GitHub, Slack, Jira, Linear, AI providers, Sentry, PostHog) are uploaded when
 	// set. Note: with this list present, `wrangler dev` loads only these names (plus vars) from .dev.vars.
 	"secrets": {

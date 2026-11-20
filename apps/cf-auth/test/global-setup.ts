@@ -98,7 +98,7 @@ export default async function setup(project: TestProject) {
 		{ mode: 0o600 },
 	)
 
-	execFileSync(WRANGLER, ['d1', 'migrations', 'apply', 'humanlayer-auth', '--local', '--persist-to', persistDir], {
+	execFileSync(WRANGLER, ['d1', 'migrations', 'apply', 'human-flare-auth', '--local', '--persist-to', persistDir], {
 		cwd: PKG,
 		stdio: 'pipe',
 		env: { ...process.env, CI: '1' },

@@ -52,7 +52,7 @@ export function createApp(opts: AppOptions = {}) {
 	app.get('/health', (c) =>
 		c.json({
 			ok: true,
-			service: 'humanlayer-hosts',
+			service: 'human-flare-hosts',
 			providers: Object.fromEntries(PROVIDERS.map((p) => [p, providerConfigured(p, c.env)])),
 		}),
 	)

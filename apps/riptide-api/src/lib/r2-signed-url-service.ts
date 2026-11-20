@@ -64,7 +64,7 @@ export class R2SignedUrlService implements IS3Service {
 		private readonly options: {
 			readonly bucket: R2BucketBinding
 			readonly signingSecret: string
-			/** Public origin of this API, e.g. https://humanlayer-api.example.workers.dev */
+			/** Public origin of this API, e.g. https://human-flare-api.example.workers.dev */
 			readonly publicOrigin: () => string
 		},
 	) {}

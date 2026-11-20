@@ -2,7 +2,7 @@
 	"$schema": "../../node_modules/wrangler/config-schema.json",
 	// Static assets only (no Worker script). Built and deployed by scripts/cloudflare/deploy.ts,
 	// which also writes .vitepress/dist/_headers.
-	"name": "humanlayer-docs",
+	"name": "human-flare-docs",
 	"compatibility_date": "2026-11-04",
 	"workers_dev": true,
 	"preview_urls": false,

@@ -5,7 +5,7 @@ import { getOptionalWorkerEnv } from './worker-env'
  *
  * The API talks to the streams server at `DURABLE_STREAMS_ORIGIN` through both
  * `@durable-streams/client` and Effect's FetchHttpClient, which both call `globalThis.fetch`. On
- * Cloudflare that server is the `humanlayer-streams` Worker, reachable only through the `STREAMS`
+ * Cloudflare that server is the `human-flare-streams` Worker, reachable only through the `STREAMS`
  * service binding, so requests whose origin matches the configured streams origin are dispatched
  * to `env.STREAMS.fetch` (same `/v1/stream/...` path and query) instead of the public internet.
  * Every other request goes to the original fetch untouched.

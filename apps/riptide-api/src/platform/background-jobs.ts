@@ -7,7 +7,7 @@ import { getOptionalWorkerEnv } from './worker-env'
  *
  * Each such task is a named job with a small JSON payload of ids (never objects: the consumer
  * re-reads current state, which is also what makes redelivery safe). On Workers with the
- * `BACKGROUND_QUEUE` binding the job is sent to the `humanlayer-background` Cloudflare Queue and
+ * `BACKGROUND_QUEUE` binding the job is sent to the `human-flare-background` Cloudflare Queue and
  * run by the `queue()` handler of the same Worker (src/jobs/consumer.ts). Everywhere else (Node/AWS,
  * tests, a Worker without the binding) the caller's `inProcess` function runs exactly as before,
  * so the Node path is unchanged.

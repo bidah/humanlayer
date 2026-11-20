@@ -219,7 +219,7 @@ export function decodeJwtPayload(token: string): Record<string, any> {
 export function d1Local(sql: string): void {
 	execFileSync(
 		resolve(import.meta.dirname, '../node_modules/.bin/wrangler'),
-		['d1', 'execute', 'humanlayer-auth', '--local', '--persist-to', inject('persistDir'), '--command', sql],
+		['d1', 'execute', 'human-flare-auth', '--local', '--persist-to', inject('persistDir'), '--command', sql],
 		{ cwd: resolve(import.meta.dirname, '..'), stdio: 'pipe', env: { ...process.env, CI: '1' } },
 	)
 }

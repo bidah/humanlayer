@@ -2,7 +2,7 @@
 	"$schema": "../../node_modules/wrangler/config-schema.json",
 	// Template: ${NAME} placeholders and account_id come from .env.cloudflare. Use the package scripts
 	// (or scripts/cloudflare/deploy.ts), which render this file to wrangler.rendered.json first.
-	"name": "humanlayer-auth",
+	"name": "human-flare-auth",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-11-04",
 	"workers_dev": true,
@@ -10,7 +10,7 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "humanlayer-auth",
+			"database_name": "human-flare-auth",
 			"database_id": "${AUTH_D1_DATABASE_ID}",
 			"migrations_dir": "migrations"
 		}

@@ -2,10 +2,10 @@
 	"$schema": "../../node_modules/wrangler/config-schema.json",
 	// Template: account_id (and any ${NAME} placeholder) comes from .env.cloudflare; deploy with the
 	// package scripts or scripts/cloudflare/deploy.ts, which render this file to wrangler.rendered.json.
-	"name": "humanlayer-electric",
+	"name": "human-flare-electric",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-11-04",
-	// Reachable only through a service binding (from humanlayer-sync). No workers.dev, no routes.
+	// Reachable only through a service binding (from human-flare-sync). No workers.dev, no routes.
 	"workers_dev": false,
 	"preview_urls": false,
 	"observability": { "enabled": true },
@@ -13,7 +13,7 @@
 		{
 			// Template: account_id (and any ${NAME} placeholder) comes from .env.cloudflare; deploy with the
 	// package scripts or scripts/cloudflare/deploy.ts, which render this file to wrangler.rendered.json.
-	"name": "humanlayer-electric",
+	"name": "human-flare-electric",
 			"class_name": "ElectricContainer",
 			// Public multi-arch image pulled by reference. Needs the `default` scheduling policy:
 			// the `durable_object` policy only pulls from registry.cloudflare.com.
@@ -32,7 +32,7 @@
 		"bindings": [{ "name": "ELECTRIC", "class_name": "ElectricContainer" }],
 	},
 	"exports": {
-		"ElectricContainer": { "type": "durable-object", "storage": "sqlite", "container": "humanlayer-electric" },
+		"ElectricContainer": { "type": "durable-object", "storage": "sqlite", "container": "human-flare-electric" },
 	},
 	// Uploaded from .env.cloudflare by scripts/cloudflare/deploy.ts. DATABASE_URL must be the
 	// direct (non-pooled) Neon URL: logical replication needs a real session.

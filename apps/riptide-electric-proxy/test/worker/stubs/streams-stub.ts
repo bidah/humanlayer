@@ -1,6 +1,6 @@
 /**
- * Local stand-in for the `humanlayer-streams` Worker (Durable Streams protocol), used only by
- * `wrangler dev` smoke tests of the humanlayer-sync Worker. Minimal, in-memory, single isolate:
+ * Local stand-in for the `human-flare-streams` Worker (Durable Streams protocol), used only by
+ * `wrangler dev` smoke tests of the human-flare-sync Worker. Minimal, in-memory, single isolate:
  *
  * - PUT    /v1/stream/<path>             create (201, or 200 if it exists)
  * - POST   /v1/stream/<path>             append body, 204 (exercises the null-body-status path)

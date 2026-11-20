@@ -1,6 +1,6 @@
 // Local-only stub for `wrangler dev` multi-worker sessions. Never deploy this.
 {
-	"name": "humanlayer-electric",
+	"name": "human-flare-electric",
 	"main": "electric-stub.ts",
 	"compatibility_date": "2026-11-04",
 	"vars": { "LIVE_HOLD_MS": "20000" }

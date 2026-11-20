@@ -1,9 +1,9 @@
 /**
- * humanlayer-electric: Electric SQL (docker.io/electricsql/electric) as a singleton Cloudflare
+ * human-flare-electric: Electric SQL (docker.io/electricsql/electric) as a singleton Cloudflare
  * Container, fronted by a Worker that forwards every request to the container's port 3000.
  *
  * Reachable only through a service binding (wrangler.jsonc has `workers_dev: false` and no
- * routes). humanlayer-sync (riptide-electric-proxy) is the only intended caller; it appends the
+ * routes). human-flare-sync (riptide-electric-proxy) is the only intended caller; it appends the
  * Electric `secret` query parameter itself.
  *
  * Reference: .claude/skills/self-host-humanlayer/references/pulumi-infra/electric-sql/pulumi.ts

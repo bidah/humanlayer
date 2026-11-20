@@ -1,5 +1,5 @@
 /**
- * humanlayer-jobs: Cron Triggers replacing two AWS Lambdas.
+ * human-flare-jobs: Cron Triggers replacing two AWS Lambdas.
  *
  * - every minute: stale-daemon sweeper (apps/stale-daemon-sweeper, four passes), then the cloud
  *   host reconcile pass (src/cloud-hosts-reconcile.ts; needs the HOSTS binding and
@@ -34,7 +34,7 @@ const MAINTENANCE_BUDGET_MS = 120_000
 
 interface Env {
 	HYPERDRIVE: Hyperdrive
-	/** The cloud host provisioner (`humanlayer-hosts`). */
+	/** The cloud host provisioner (`human-flare-hosts`). */
 	HOSTS?: Fetcher
 	INTERNAL_SERVICE_SECRET?: string
 }

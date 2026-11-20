@@ -1,9 +1,9 @@
 /**
- * End-to-end smoke test against a deployed humanlayer-hosts Worker.
+ * End-to-end smoke test against a deployed human-flare-hosts Worker.
  *
  *   bun run scripts/smoke.ts --provider daytona [--keep] [--minutes 12] [--base <hosts origin>]
  *
- * Reads INTERNAL_SERVICE_SECRET, RIPTIDE_DAEMON_TOKEN_PRIVATE_KEY and the humanlayer-hosts origin from
+ * Reads INTERNAL_SERVICE_SECRET, RIPTIDE_DAEMON_TOKEN_PRIVATE_KEY and the human-flare-hosts origin from
  * the repo's .env.cloudflare (exported variables take precedence).
  *
  * Signs a throwaway daemon token (invented user/org/host UUIDs) with RIPTIDE_DAEMON_TOKEN_PRIVATE_KEY,

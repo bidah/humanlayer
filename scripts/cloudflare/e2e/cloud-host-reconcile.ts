@@ -1,4 +1,4 @@
-// End-to-end check of the cloud host reconcile pass (humanlayer-jobs, every minute).
+// End-to-end check of the cloud host reconcile pass (human-flare-jobs, every minute).
 //
 //   bun scripts/cloudflare/e2e/cloud-host-reconcile.ts --provider cloudflare
 //

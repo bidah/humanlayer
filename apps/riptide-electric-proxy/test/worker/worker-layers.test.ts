@@ -25,12 +25,12 @@ describe('makeBindingFetch', () => {
 			[
 				{
 					bindingName: 'ELECTRIC',
-					origin: 'http://humanlayer-electric',
+					origin: 'http://human-flare-electric',
 					binding: recordingBinding('electric', calls),
 				},
 				{
 					bindingName: 'STREAMS',
-					origin: 'http://humanlayer-streams',
+					origin: 'http://human-flare-streams',
 					binding: recordingBinding('streams', calls),
 				},
 			],
@@ -40,8 +40,8 @@ describe('makeBindingFetch', () => {
 			},
 		)
 
-		expect(await (await fetch('http://humanlayer-electric/v1/shape?table=x&secret=s')).text()).toBe('electric')
-		expect(await (await fetch('http://humanlayer-streams/v1/stream/a/b', { method: 'PUT' })).text()).toBe('streams')
+		expect(await (await fetch('http://human-flare-electric/v1/shape?table=x&secret=s')).text()).toBe('electric')
+		expect(await (await fetch('http://human-flare-streams/v1/stream/a/b', { method: 'PUT' })).text()).toBe('streams')
 		expect(await (await fetch('https://api.workos.com/sso/jwks/client_x')).text()).toBe('fallback')
 		expect(calls).toEqual([
 			'electric GET /v1/shape?table=x&secret=s',
@@ -52,9 +52,9 @@ describe('makeBindingFetch', () => {
 
 	it('fails loudly when the binding is not configured', async () => {
 		const fetch = makeBindingFetch([
-			{ bindingName: 'STREAMS', origin: 'http://humanlayer-streams', binding: undefined },
+			{ bindingName: 'STREAMS', origin: 'http://human-flare-streams', binding: undefined },
 		])
-		await expect(fetch('http://humanlayer-streams/v1/stream/x')).rejects.toBeInstanceOf(UpstreamBindingMissingError)
+		await expect(fetch('http://human-flare-streams/v1/stream/x')).rejects.toBeInstanceOf(UpstreamBindingMissingError)
 	})
 })
 

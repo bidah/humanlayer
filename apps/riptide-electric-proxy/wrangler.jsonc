@@ -1,4 +1,4 @@
-// Cloudflare Worker build of the Electric / Durable Streams auth proxy (`humanlayer-sync`).
+// Cloudflare Worker build of the Electric / Durable Streams auth proxy (`human-flare-sync`).
 // Entry: src/worker.ts. The Node entry (src/index.ts, Dockerfile) is unchanged.
 //
 // Template: account_id and the ${NAME} placeholders come from .env.cloudflare; the package scripts
@@ -8,7 +8,7 @@
 //   and put the secrets in .dev.vars (gitignored) or pass them with --var.
 {
 	"$schema": "../../node_modules/wrangler/config-schema.json",
-	"name": "humanlayer-sync",
+	"name": "human-flare-sync",
 	"main": "src/worker.ts",
 	"tsconfig": "./tsconfig.json",
 	"compatibility_date": "2026-11-04",
@@ -40,15 +40,15 @@
 	// Upstreams are reachable only through these bindings. Requests the proxy addresses to
 	// ELECTRIC_SHAPE_URL's origin go to ELECTRIC, to DURABLE_STREAMS_ORIGIN's origin go to STREAMS.
 	"services": [
-		{ "binding": "ELECTRIC", "service": "humanlayer-electric" },
-		{ "binding": "STREAMS", "service": "humanlayer-streams" }
+		{ "binding": "ELECTRIC", "service": "human-flare-electric" },
+		{ "binding": "STREAMS", "service": "human-flare-streams" }
 	],
 	"vars": {
-		"ELECTRIC_SHAPE_URL": "http://humanlayer-electric/v1/shape",
-		"DURABLE_STREAMS_ORIGIN": "http://humanlayer-streams",
+		"ELECTRIC_SHAPE_URL": "http://human-flare-electric/v1/shape",
+		"DURABLE_STREAMS_ORIGIN": "http://human-flare-streams",
 		"LOG_LEVEL": "info",
 		"SENTRY_ENVIRONMENT": "cloudflare",
-		// The WorkOS-compatible auth service (default: the humanlayer-auth Worker; see
+		// The WorkOS-compatible auth service (default: the human-flare-auth Worker; see
 		// scripts/cloudflare/config.ts). User JWTs are verified against its JWKS.
 		"WORKOS_CLIENT_ID": "${WORKOS_CLIENT_ID}",
 		"WORKOS_API_HOSTNAME": "${WORKOS_API_HOSTNAME}",

@@ -24,7 +24,7 @@ async function rpc(token: string, path: string, input: unknown = {}) {
 }
 const { email, password } = await bootstrapCredentials()
 let t = await signIn(email, password)
-check('sign in via humanlayer-auth', !!t.access_token, { claimKeys: Object.keys(claims(t.access_token)) })
+check('sign in via human-flare-auth', !!t.access_token, { claimKeys: Object.keys(claims(t.access_token)) })
 let list = await rpc(t.access_token, 'auth/user/organizations/list')
 check('API accepts user JWT (organizations.list)', list.status === 200, {
 	status: list.status,

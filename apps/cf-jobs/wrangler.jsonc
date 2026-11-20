@@ -2,7 +2,7 @@
 	"$schema": "../../node_modules/wrangler/config-schema.json",
 	// Template: account_id (and any ${NAME} placeholder) comes from .env.cloudflare; deploy with the
 	// package scripts or scripts/cloudflare/deploy.ts, which render this file to wrangler.rendered.json.
-	"name": "humanlayer-jobs",
+	"name": "human-flare-jobs",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-11-04",
 	// postgres.js needs node:net/tls/crypto shims.
@@ -17,8 +17,8 @@
 	},
 	"hyperdrive": [{ "binding": "HYPERDRIVE", "id": "${HYPERDRIVE_ID}" }],
 	// The cloud host provisioner, for the reconcile pass (src/cloud-hosts-reconcile.ts).
-	"services": [{ "binding": "HOSTS", "service": "humanlayer-hosts" }],
+	"services": [{ "binding": "HOSTS", "service": "human-flare-hosts" }],
 	// Uploaded from .env.cloudflare by scripts/cloudflare/deploy.ts. Authenticates the reconcile pass
-	// to humanlayer-hosts.
+	// to human-flare-hosts.
 	"secrets": { "required": ["INTERNAL_SERVICE_SECRET"] },
 }

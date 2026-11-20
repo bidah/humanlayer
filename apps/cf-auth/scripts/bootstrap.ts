@@ -61,7 +61,7 @@ try {
 		[
 			'd1',
 			'execute',
-			'humanlayer-auth',
+			'human-flare-auth',
 			values.local ? '--local' : '--remote',
 			'--file',
 			sqlFile,

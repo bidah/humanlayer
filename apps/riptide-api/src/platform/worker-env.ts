@@ -37,9 +37,9 @@ export interface WorkerEnv {
 	readonly BILLING_KV?: KvNamespaceBinding
 	readonly ARTIFACTS?: R2BucketBinding
 	readonly STREAMS?: FetcherBinding
-	/** The cloud host provisioner (`humanlayer-hosts`); see effects/services/cloud-hosts. */
+	/** The cloud host provisioner (`human-flare-hosts`); see effects/services/cloud-hosts. */
 	readonly HOSTS?: FetcherBinding
-	/** Producer for the `humanlayer-background` queue (platform/background-jobs.ts). */
+	/** Producer for the `human-flare-background` queue (platform/background-jobs.ts). */
 	readonly BACKGROUND_QUEUE?: {
 		send(body: unknown, options?: { contentType?: 'json'; delaySeconds?: number }): Promise<unknown>
 	}

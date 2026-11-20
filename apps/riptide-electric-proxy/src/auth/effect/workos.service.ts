@@ -29,7 +29,7 @@ export const WorkosConfigLive = Layer.effect(
 		const workosApiKey = yield* EnvironmentVariable('WORKOS_API_KEY').pipe(Effect.map(Redacted.make))
 
 		// Optional override of the WorkOS API host, so the SDK can target a WorkOS-compatible service
-		// (for example the self-hosted `humanlayer-auth` Worker). Unset = api.workos.com, as upstream.
+		// (for example the self-hosted `human-flare-auth` Worker). Unset = api.workos.com, as upstream.
 		const apiHostname = Option.getOrUndefined(yield* Config.option(Config.String('WORKOS_API_HOSTNAME')))
 		const apiHttps = Option.getOrUndefined(yield* Config.option(Config.String('WORKOS_API_HTTPS')))
 		const apiPort = Option.getOrUndefined(yield* Config.option(Config.String('WORKOS_API_PORT')))

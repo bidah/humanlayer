@@ -1,7 +1,7 @@
 /**
  * Build this fork's `humanlayer` CLI with the deployment's backend origins and auth service baked in,
- * and optionally publish it to R2 (`humanlayer-artifacts/cli/<version>/...` + `cli/latest.json`).
- * humanlayer-hosts serves the result at `<HOSTS_ORIGIN>/cli/latest/humanlayer-<platform>`.
+ * and optionally publish it to R2 (`human-flare-artifacts/cli/<version>/...` + `cli/latest.json`).
+ * human-flare-hosts serves the result at `<HOSTS_ORIGIN>/cli/latest/humanlayer-<platform>`.
  *
  *   bun run scripts/build-cli.ts                                  # linux-x64 -> dist/cli/
  *   bun run scripts/build-cli.ts --targets darwin-arm64           # a binary for this Mac
@@ -13,7 +13,7 @@
  *
  * Values come from the repo's .env.cloudflare (scripts/cloudflare/config.ts): the API, sync, cloud
  * and app origins; WORKOS_API_ORIGIN, the origin `humanlayer login` runs the device flow against
- * (default: the humanlayer-auth Worker); and PROD_WORKOS_CLIENT_ID (default: its client id).
+ * (default: the human-flare-auth Worker); and PROD_WORKOS_CLIENT_ID (default: its client id).
  *
  * The CLI bakes configuration through Bun macros that read `process.env` at build time
  * (apps/cli/src/lib/macros, apps/riptide-daemon/src/lib/macros). To guarantee nothing else from
@@ -37,7 +37,7 @@ const PKG_DIR = path.resolve(import.meta.dir, '..')
 const REPO_ROOT = path.resolve(PKG_DIR, '../..')
 const CLI_DIR = path.join(REPO_ROOT, 'apps/cli')
 const OUT_DIR = path.join(PKG_DIR, 'dist/cli')
-const BUCKET = 'humanlayer-artifacts'
+const BUCKET = 'human-flare-artifacts'
 
 const PLATFORMS = {
 	'linux-x64': { target: 'bun-linux-x64-baseline', file: 'humanlayer-linux-x64', type: /ELF 64-bit .*x86-64/ },

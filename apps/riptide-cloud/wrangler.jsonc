@@ -3,7 +3,7 @@
 	// Static assets only (no Worker script). Built and deployed by scripts/cloudflare/deploy.ts,
 	// which bakes the VITE_PUBLIC_* config into the build and writes dist/_headers (security
 	// headers whose CSP needs the deployment's API and sync origins).
-	"name": "humanlayer-cloud",
+	"name": "human-flare-cloud",
 	"compatibility_date": "2026-11-04",
 	"workers_dev": true,
 	"preview_urls": false,

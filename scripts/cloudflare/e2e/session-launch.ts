@@ -14,7 +14,7 @@
 //      the bootstrap creates; no repository, no worktree);
 //   3. watches the session row in Postgres and reports every status transition, the conversation
 //      events, the session's durable stream (read through the sync proxy as the user), the host's
-//      daemon log, and the daemon's requests to `humanlayer-api` and `humanlayer-sync` as seen by
+//      daemon log, and the daemon's requests to `human-flare-api` and `human-flare-sync` as seen by
 //      `wrangler tail`;
 //   4. asks the host's daemon for a Claude sign-in (`providerLogin.create`, what the app's "Sign in"
 //      button does) and waits for the sign-in URL, then cancels the request without completing it;
@@ -90,7 +90,7 @@ async function rpc(token: string, path: string, input: unknown = {}) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// wrangler tail: the request log of humanlayer-api and humanlayer-sync while the check runs.
+// wrangler tail: the request log of human-flare-api and human-flare-sync while the check runs.
 // Only method, path, status, outcome and log/exception messages are kept; headers are dropped.
 interface TailEvent {
 	worker: string
@@ -234,7 +234,7 @@ if (!values['no-tail']) {
 	await startTail('api', 'apps/riptide-api')
 	await startTail('sync', 'apps/riptide-electric-proxy')
 	await sleep(6_000) // tail sessions take a few seconds to attach
-	info('wrangler tail attached to humanlayer-api and humanlayer-sync')
+	info('wrangler tail attached to human-flare-api and human-flare-sync')
 }
 
 let hostId: string | undefined

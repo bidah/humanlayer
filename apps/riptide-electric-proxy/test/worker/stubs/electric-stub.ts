@@ -1,6 +1,6 @@
 /**
- * Local stand-in for the `humanlayer-electric` Worker, used only by `wrangler dev` smoke tests of
- * the humanlayer-sync Worker (see test/worker/smoke.ts). It echoes what the proxy sent so the
+ * Local stand-in for the `human-flare-electric` Worker, used only by `wrangler dev` smoke tests of
+ * the human-flare-sync Worker (see test/worker/smoke.ts). It echoes what the proxy sent so the
  * smoke test can assert on the server-chosen table/where/params and on the Electric secret
  * (reported as a SHA-256 digest, never echoed in clear).
  *

@@ -120,7 +120,7 @@ export class DaytonaProvider implements CloudHostProvider {
 	}
 
 	private headers(extra: Record<string, string> = {}): Record<string, string> {
-		return { Authorization: `Bearer ${this.cfg.apiKey}`, 'X-Daytona-Source': 'humanlayer-hosts', ...extra }
+		return { Authorization: `Bearer ${this.cfg.apiKey}`, 'X-Daytona-Source': 'human-flare-hosts', ...extra }
 	}
 
 	private async api<T>(method: string, path: string, body?: unknown): Promise<{ status: number; data: T | null }> {
@@ -242,7 +242,7 @@ export class DaytonaProvider implements CloudHostProvider {
 			...input.labels,
 			app: 'humanlayer',
 			hostId: input.hostId,
-			managedBy: 'humanlayer-hosts',
+			managedBy: 'human-flare-hosts',
 			cliVersion: input.cli.version ?? 'unknown',
 		}
 		await this.api('POST', '/sandbox', {

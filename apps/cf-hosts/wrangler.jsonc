@@ -2,7 +2,7 @@
 	"$schema": "../../node_modules/wrangler/config-schema.json",
 	// Template: account_id (and any ${NAME} placeholder) comes from .env.cloudflare; deploy with the
 	// package scripts or scripts/cloudflare/deploy.ts, which render this file to wrangler.rendered.json.
-	"name": "humanlayer-hosts",
+	"name": "human-flare-hosts",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-10-01",
 	"compatibility_flags": ["nodejs_compat"],
@@ -29,7 +29,7 @@
 		],
 	},
 	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["HostSandbox", "HostRegistry"] }],
-	"r2_buckets": [{ "binding": "ARTIFACTS", "bucket_name": "humanlayer-artifacts" }],
+	"r2_buckets": [{ "binding": "ARTIFACTS", "bucket_name": "human-flare-artifacts" }],
 	"vars": {
 		"DAYTONA_API_URL": "${DAYTONA_API_URL}",
 		"E2B_API_URL": "https://api.e2b.app",

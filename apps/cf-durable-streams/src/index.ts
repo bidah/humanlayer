@@ -1,5 +1,5 @@
 /**
- * humanlayer-streams: the Durable Streams HTTP protocol on Durable Objects.
+ * human-flare-streams: the Durable Streams HTTP protocol on Durable Objects.
  *
  * Routes `/v1/stream/<path...>` to one SQLite-backed Durable Object per
  * stream path (`idFromName(pathname)`). Not publicly routed: callers reach it

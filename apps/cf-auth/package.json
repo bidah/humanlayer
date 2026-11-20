@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "bun ../../scripts/cloudflare/wrangler.ts dev",
     "deploy": "bun ../../scripts/cloudflare/wrangler.ts deploy",
-    "migrate:local": "bun ../../scripts/cloudflare/wrangler.ts d1 migrations apply humanlayer-auth --local",
-    "migrate:remote": "bun ../../scripts/cloudflare/wrangler.ts d1 migrations apply humanlayer-auth --remote",
+    "migrate:local": "bun ../../scripts/cloudflare/wrangler.ts d1 migrations apply human-flare-auth --local",
+    "migrate:remote": "bun ../../scripts/cloudflare/wrangler.ts d1 migrations apply human-flare-auth --remote",
     "secrets:generate": "bun scripts/generate-secrets.ts",
     "secrets:put": "bun scripts/put-secrets.ts",
     "bootstrap": "bun scripts/bootstrap.ts",

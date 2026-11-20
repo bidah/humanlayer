@@ -1,5 +1,5 @@
 /**
- * Client for the cloud host provisioner (`humanlayer-hosts`, apps/cf-hosts). Its README is the
+ * Client for the cloud host provisioner (`human-flare-hosts`, apps/cf-hosts). Its README is the
  * contract this codes against.
  *
  * Transport, chosen per call:
@@ -18,7 +18,7 @@ import { Config, Context, Data, Effect, Layer, Option, Redacted } from 'effect'
 
 import { getOptionalWorkerEnv } from '../../../platform/worker-env'
 
-const BINDING_ORIGIN = 'https://humanlayer-hosts.internal'
+const BINDING_ORIGIN = 'https://human-flare-hosts.internal'
 const REQUEST_TIMEOUT_MS = 120_000
 
 export interface ProvisionerHostInfo {

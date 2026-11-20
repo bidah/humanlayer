@@ -22,7 +22,7 @@ export function retryDelaySeconds(attempts: number): number {
 }
 
 /**
- * `queue()` handler body for `humanlayer-background`.
+ * `queue()` handler body for `human-flare-background`.
  *
  * Messages run one at a time, each inside its own request scope, exactly like a fetch: its own
  * request-local Postgres client (Hyperdrive), background work registered with `waitUntil` and

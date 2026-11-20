@@ -4,7 +4,7 @@
  * (packages/pulumi-helpers/src/cloudfront.ts, createSpaSecurityHeadersPolicy).
  *
  * The CSP stays report-only, as upstream ships it. S3 origins are replaced by R2 (artifacts live in
- * the `humanlayer-artifacts` bucket here); Sentry is not configured, so no ingest origin.
+ * the `human-flare-artifacts` bucket here); Sentry is not configured, so no ingest origin.
  */
 
 const PERMISSIONS_POLICY = [

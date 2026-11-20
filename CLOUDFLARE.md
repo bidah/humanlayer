@@ -38,16 +38,16 @@ dependencies. New packages hold the Cloudflare-only services:
 
 | Package | Worker | Purpose |
 |---|---|---|
-| `apps/riptide-api` | `humanlayer-api` | The oRPC/Hono API, as a Worker (`src/worker.ts`) |
-| `apps/riptide-electric-proxy` | `humanlayer-sync` | Auth proxy for Electric and Durable Streams, as a Worker |
-| `apps/cf-durable-streams` | `humanlayer-streams` | The Durable Streams protocol on SQLite-backed Durable Objects |
-| `apps/cf-electric` | `humanlayer-electric` | Electric SQL as a single Cloudflare Container |
-| `apps/cf-jobs` | `humanlayer-jobs` | Cron Triggers: stale-daemon sweeper, DB maintenance, cloud host reconcile |
-| `apps/cf-auth` | `humanlayer-auth` | A WorkOS-compatible auth service on D1 (see its [README](apps/cf-auth/README.md)) |
-| `apps/cf-hosts` | `humanlayer-hosts` | Starts daemon hosts in cloud sandboxes; serves the CLI binaries (see its [README](apps/cf-hosts/README.md)) |
-| `apps/riptide-ui` | `humanlayer-app` | The web app, as static assets |
-| `apps/riptide-cloud` | `humanlayer-cloud` | The cloud site (sign-in, organizations), as static assets |
-| `apps/docs` | `humanlayer-docs` | The docs site, as static assets |
+| `apps/riptide-api` | `human-flare-api` | The oRPC/Hono API, as a Worker (`src/worker.ts`) |
+| `apps/riptide-electric-proxy` | `human-flare-sync` | Auth proxy for Electric and Durable Streams, as a Worker |
+| `apps/cf-durable-streams` | `human-flare-streams` | The Durable Streams protocol on SQLite-backed Durable Objects |
+| `apps/cf-electric` | `human-flare-electric` | Electric SQL as a single Cloudflare Container |
+| `apps/cf-jobs` | `human-flare-jobs` | Cron Triggers: stale-daemon sweeper, DB maintenance, cloud host reconcile |
+| `apps/cf-auth` | `human-flare-auth` | A WorkOS-compatible auth service on D1 (see its [README](apps/cf-auth/README.md)) |
+| `apps/cf-hosts` | `human-flare-hosts` | Starts daemon hosts in cloud sandboxes; serves the CLI binaries (see its [README](apps/cf-hosts/README.md)) |
+| `apps/riptide-ui` | `human-flare-app` | The web app, as static assets |
+| `apps/riptide-cloud` | `human-flare-cloud` | The cloud site (sign-in, organizations), as static assets |
+| `apps/docs` | `human-flare-docs` | The docs site, as static assets |
 
 The deploy tooling lives in `scripts/cloudflare/`:
 
@@ -60,28 +60,28 @@ The deploy tooling lives in `scripts/cloudflare/`:
 
 | Upstream (AWS) | This fork (Cloudflare) |
 |---|---|
-| `riptide-api` on ECS Fargate | Worker `humanlayer-api`, placed next to the database (`PLACEMENT_REGION`) |
-| RDS Postgres | Any Postgres 18 with logical replication (for example Neon), reached through Hyperdrive `humanlayer-db` (Electric and migrations connect directly) |
-| MemoryDB (Redis) | KV namespace `humanlayer-billing-cache` |
-| S3 artifacts bucket, presigned URLs | R2 bucket `humanlayer-artifacts`, URLs signed by the API (`ARTIFACT_URL_SIGNING_SECRET`) |
-| Singleton Electric on Fargate (ephemeral storage) | Worker `humanlayer-electric` + one Cloudflare Container (`electricsql/electric` image), ephemeral disk |
-| `riptide-electric-proxy` on ECS | Worker `humanlayer-sync`, reaching Electric and Streams through service bindings |
-| Singleton Rust durable streams server on Fargate behind an internal ALB | Worker `humanlayer-streams` on SQLite-backed Durable Objects |
-| Stale-daemon sweeper Lambda + EventBridge schedule | Worker `humanlayer-jobs`, cron `* * * * *` |
-| Database maintenance Lambda | Worker `humanlayer-jobs`, cron `17 4 * * *` |
+| `riptide-api` on ECS Fargate | Worker `human-flare-api`, placed next to the database (`PLACEMENT_REGION`) |
+| RDS Postgres | Any Postgres 18 with logical replication (for example Neon), reached through Hyperdrive `human-flare-db` (Electric and migrations connect directly) |
+| MemoryDB (Redis) | KV namespace `human-flare-billing-cache` |
+| S3 artifacts bucket, presigned URLs | R2 bucket `human-flare-artifacts`, URLs signed by the API (`ARTIFACT_URL_SIGNING_SECRET`) |
+| Singleton Electric on Fargate (ephemeral storage) | Worker `human-flare-electric` + one Cloudflare Container (`electricsql/electric` image), ephemeral disk |
+| `riptide-electric-proxy` on ECS | Worker `human-flare-sync`, reaching Electric and Streams through service bindings |
+| Singleton Rust durable streams server on Fargate behind an internal ALB | Worker `human-flare-streams` on SQLite-backed Durable Objects |
+| Stale-daemon sweeper Lambda + EventBridge schedule | Worker `human-flare-jobs`, cron `* * * * *` |
+| Database maintenance Lambda | Worker `human-flare-jobs`, cron `17 4 * * *` |
 | Migrator Lambda run on deploy | `drizzle-kit migrate` run by the deploy script |
-| Post-response background work inside the API process | Queue `humanlayer-background` (+ dead-letter queue), consumed by `humanlayer-api` |
+| Post-response background work inside the API process | Queue `human-flare-background` (+ dead-letter queue), consumed by `human-flare-api` |
 | Secrets Manager | Worker secrets, uploaded from `.env.cloudflare` by the deploy script |
-| WorkOS (AuthKit, user management) | Worker `humanlayer-auth` on D1 `humanlayer-auth`, WorkOS-compatible; real WorkOS stays a config switch |
-| S3 + CloudFront for `riptide-ui` and `riptide-cloud` | Workers Static Assets (`humanlayer-app`, `humanlayer-cloud`, and `humanlayer-docs` for the docs site), headers in `_headers` |
+| WorkOS (AuthKit, user management) | Worker `human-flare-auth` on D1 `human-flare-auth`, WorkOS-compatible; real WorkOS stays a config switch |
+| S3 + CloudFront for `riptide-ui` and `riptide-cloud` | Workers Static Assets (`human-flare-app`, `human-flare-cloud`, and `human-flare-docs` for the docs site), headers in `_headers` |
 | Route53, ACM certificates | `workers.dev` subdomain (custom domains: set the `*_ORIGIN` keys and add the domains to the Workers yourself) |
 | updater-server (desktop app updates) | Not ported |
-| (no equivalent) | Worker `humanlayer-hosts`: daemon hosts on Cloudflare Containers, Daytona or E2B |
+| (no equivalent) | Worker `human-flare-hosts`: daemon hosts on Cloudflare Containers, Daytona or E2B |
 | Sentry | Not wired up on Workers (the calls are no-ops) |
 
-Service bindings: `humanlayer-api` binds `humanlayer-streams` and `humanlayer-hosts`;
-`humanlayer-sync` binds `humanlayer-electric` and `humanlayer-streams`; `humanlayer-jobs` binds
-`humanlayer-hosts`. `humanlayer-streams` and `humanlayer-electric` have no public URL. The public
+Service bindings: `human-flare-api` binds `human-flare-streams` and `human-flare-hosts`;
+`human-flare-sync` binds `human-flare-electric` and `human-flare-streams`; `human-flare-jobs` binds
+`human-flare-hosts`. `human-flare-streams` and `human-flare-electric` have no public URL. The public
 Workers are served at `https://<worker>.<WORKERS_SUBDOMAIN>.workers.dev` unless you override an
 origin.
 
@@ -119,9 +119,9 @@ What `bun run cloudflare:deploy` does, in order (all steps are idempotent):
 
 1. Checks that wrangler is logged in to `CLOUDFLARE_ACCOUNT_ID`, that container images are
    registry references, and that `DATABASE_URL` is Postgres 18 with `wal_level = logical`.
-2. Finds, by name, or creates the account resources: Hyperdrive config `humanlayer-db`, KV namespace
-   `humanlayer-billing-cache`, R2 bucket `humanlayer-artifacts`, D1 database `humanlayer-auth`, and
-   the queues `humanlayer-background-dlq` and `humanlayer-background`. It appends the ids it finds
+2. Finds, by name, or creates the account resources: Hyperdrive config `human-flare-db`, KV namespace
+   `human-flare-billing-cache`, R2 bucket `human-flare-artifacts`, D1 database `human-flare-auth`, and
+   the queues `human-flare-background-dlq` and `human-flare-background`. It appends the ids it finds
    or creates (`HYPERDRIVE_ID`, `BILLING_KV_ID`, `AUTH_D1_DATABASE_ID`) to `.env.cloudflare`. It
    never touches a resource with another name.
 3. Generates each missing secret (daemon token key pair, Electric secret, internal service
@@ -199,16 +199,16 @@ comment. Format: `KEY=value` or `KEY='value'` (single quotes are literal, double
 | Key | Meaning |
 |---|---|
 | `CLOUDFLARE_ACCOUNT_ID` | The Cloudflare account to deploy to |
-| `WORKERS_SUBDOMAIN` | Your `workers.dev` subdomain; origins default to `https://humanlayer-<name>.<WORKERS_SUBDOMAIN>.workers.dev` |
+| `WORKERS_SUBDOMAIN` | Your `workers.dev` subdomain; origins default to `https://human-flare-<name>.<WORKERS_SUBDOMAIN>.workers.dev` |
 | `DATABASE_URL` | Direct Postgres 18 URL with logical replication. Used by Electric, Hyperdrive and the migrations |
 
 ### Written by the deploy script
 
 | Key | Meaning |
 |---|---|
-| `HYPERDRIVE_ID` | Hyperdrive config `humanlayer-db` |
-| `BILLING_KV_ID` | KV namespace `humanlayer-billing-cache` |
-| `AUTH_D1_DATABASE_ID` | D1 database `humanlayer-auth` |
+| `HYPERDRIVE_ID` | Hyperdrive config `human-flare-db` |
+| `BILLING_KV_ID` | KV namespace `human-flare-billing-cache` |
+| `AUTH_D1_DATABASE_ID` | D1 database `human-flare-auth` |
 
 Set one of these yourself only to reuse an existing resource; the script fails if a set id does
 not exist on the account instead of creating another resource.
@@ -303,7 +303,7 @@ Worker that already has its secrets. Use the deploy script for anything else.
 A cloud host is a sandbox that runs this fork's `humanlayer daemon launch`, so a user can run
 agent sessions without their own machine. Users create one in the web app (Settings > Hosts >
 New cloud host, or the host picker in the launcher). The API mints a daemon token for the host and
-calls `humanlayer-hosts`, which starts the sandbox, installs the CLI from R2 and Claude Code, and
+calls `human-flare-hosts`, which starts the sandbox, installs the CLI from R2 and Claude Code, and
 starts the daemon. Agent credentials the user enters (Anthropic API key or Claude Code OAuth
 token, GitHub token) are passed through to the host and not stored by HumanLayer; the Cloudflare
 provider keeps them in the host's Durable Object storage until the host is destroyed, so it can
@@ -325,12 +325,12 @@ Costs that run continuously:
 - Daytona and E2B hosts are billed by those providers while they run.
 - Electric runs as one `basic` container while it has clients, and for 30 minutes after the last
   request. While awake it holds a replication connection to Postgres.
-- `humanlayer-jobs` runs every minute and queries Postgres each time. A database that scales to
+- `human-flare-jobs` runs every minute and queries Postgres each time. A database that scales to
   zero when idle (Neon's default) will therefore not suspend. **(not measured)**
 - Workers Paid plan base fee, plus usage of Workers, Durable Objects, R2, D1, KV, Queues and
   Hyperdrive.
 
-The reconcile pass in `humanlayer-jobs` compares the API's host rows with the provider every
+The reconcile pass in `human-flare-jobs` compares the API's host rows with the provider every
 minute: a host that disappeared (expired, deleted outside the product) is marked destroyed and
 its daemon token revoked.
 
@@ -344,9 +344,9 @@ model credential** on the host:
   repository, no worktree) reaches the host. The session row goes `ready_for_launch` →
   `launching` (written by the daemon) within 3 to 8 seconds, then `running` → `ready_for_input`.
   `wrangler tail` shows the daemon's side of it: its `/v1/sessions/<hostId>`, `/v1/tasks` and
-  `/v2/daemon/*` shapes through `humanlayer-sync` (all 200), then `sessions/update`,
+  `/v2/daemon/*` shapes through `human-flare-sync` (all 200), then `sessions/update`,
   `settings/get`, `contextShards/listEnabled`, `sessions/ensureStreamHydrated` and
-  `sessions/events/create` on `humanlayer-api` (all 200). The daemon log
+  `sessions/events/create` on `human-flare-api` (all 200). The daemon log
   (`hosts.cloud.logs`) shows `Marked session <id> as launching` and `Session <id> completed`.
 - **Agent start.** The daemon starts Claude Code in the working directory. Without a credential,
   Claude Code answers the prompt with `Not logged in · Please run /login` and the run ends.
@@ -363,7 +363,7 @@ model credential** on the host:
 
 The check creates and destroys its own host and deletes the task, session, artifact, sign-in and
 onboarding-milestone rows it creates. Each run leaves one small orphaned session stream in
-`humanlayer-streams` (the product has no stream deletion, and the proxy only serves streams of
+`human-flare-streams` (the product has no stream deletion, and the proxy only serves streams of
 existing sessions).
 
 Not verified: a session with a real credential (Claude Code doing work, tool calls, approvals,
@@ -376,7 +376,7 @@ tested).
 ## The CLI
 
 The deploy publishes `humanlayer` CLI binaries built with this deployment's origins and auth
-service baked in. They are served by `humanlayer-hosts` from R2:
+service baked in. They are served by `human-flare-hosts` from R2:
 
 ```
 <HOSTS_ORIGIN>/cli/latest/humanlayer-linux-x64     # what cloud hosts install
@@ -390,11 +390,11 @@ service baked in. They are served by `humanlayer-hosts` from R2:
 Install on your machine (macOS on Apple silicon shown):
 
 ```sh
-HOSTS_ORIGIN=https://humanlayer-hosts.<WORKERS_SUBDOMAIN>.workers.dev
+HOSTS_ORIGIN=https://human-flare-hosts.<WORKERS_SUBDOMAIN>.workers.dev
 curl -fL -o humanlayer "$HOSTS_ORIGIN/cli/latest/humanlayer-darwin-arm64"
 curl -fsS "$HOSTS_ORIGIN/cli/latest.json"   # compare files["humanlayer-darwin-arm64"].sha256 with: shasum -a 256 humanlayer
 chmod +x humanlayer && mv humanlayer /usr/local/bin/
-humanlayer login        # device login against humanlayer-auth: prints a URL and a code
+humanlayer login        # device login against human-flare-auth: prints a URL and a code
 humanlayer daemon launch
 ```
 
@@ -415,7 +415,7 @@ publish a binary that contains any secret value from `.env.cloudflare`.
 
 Verified: the published darwin-arm64 binary (downloaded from `/cli/latest/`, checksum matching the
 manifest) and a local build of the same configuration both start `humanlayer login` against the
-`humanlayer-auth` origin and print the verification URL and code. The published linux-x64 binary
+`human-flare-auth` origin and print the verification URL and code. The published linux-x64 binary
 is what the cloud host checks install and run. Completing a login from the CLI, `humanlayer
 daemon launch` on a user's machine, and the linux-arm64, darwin-x64 and win32-x64 binaries were
 not run while writing this guide.
@@ -443,7 +443,7 @@ cd apps/riptide-api && bun ../../scripts/cloudflare/wrangler.ts tail
 cd apps/cf-jobs     && bun ../../scripts/cloudflare/wrangler.ts tail --format pretty
 ```
 
-(`wrangler tail` only needs the Worker name; plain `node_modules/.bin/wrangler tail humanlayer-api`
+(`wrangler tail` only needs the Worker name; plain `node_modules/.bin/wrangler tail human-flare-api`
 with `CLOUDFLARE_ACCOUNT_ID` exported also works.) Workers Logs (observability) is enabled on
 every Worker, so past logs are in the dashboard too.
 
@@ -457,7 +457,7 @@ bun scripts/cloudflare/e2e/cloud-host-reconcile.ts --provider cloudflare
 bun scripts/cloudflare/e2e/session-launch.ts --provider cloudflare # launch a session on a new host, sign-in URL
 ```
 
-`session-launch.ts` also runs `wrangler tail` on `humanlayer-api` and `humanlayer-sync` to show the
+`session-launch.ts` also runs `wrangler tail` on `human-flare-api` and `human-flare-sync` to show the
 daemon's requests (`--no-tail` skips it).
 
 Right after a deploy that included `electric`, the first sync shape request is slow while
@@ -471,7 +471,7 @@ curl -s -H "authorization: Bearer $INTERNAL_SERVICE_SECRET" "$HOSTS_ORIGIN/v1/ho
 curl -s -X DELETE -H "authorization: Bearer $INTERNAL_SERVICE_SECRET" "$HOSTS_ORIGIN/v1/hosts/<provider>/<hostId>"
 ```
 
-(`HOSTS_ORIGIN` is `https://humanlayer-hosts.<WORKERS_SUBDOMAIN>.workers.dev` unless overridden.)
+(`HOSTS_ORIGIN` is `https://human-flare-hosts.<WORKERS_SUBDOMAIN>.workers.dev` unless overridden.)
 
 Rotating keys. The deploy script never rotates; to rotate, change the value in `.env.cloudflare`
 and redeploy the Workers that use it:
@@ -492,11 +492,11 @@ Other operations:
 - Database migrations run on every deploy unless `--skip-migrations`. To run them alone:
   `cd packages/db && DATABASE_URL=... bun --bun drizzle-kit migrate`.
 - D1 (auth) migrations: `cd apps/cf-auth && bun run migrate:remote`.
-- Back up the D1 database: `cd apps/cf-auth && bun ../../scripts/cloudflare/wrangler.ts d1 export humanlayer-auth --remote --output auth.sql` **(not verified)**.
+- Back up the D1 database: `cd apps/cf-auth && bun ../../scripts/cloudflare/wrangler.ts d1 export human-flare-auth --remote --output auth.sql` **(not verified)**.
 
 ## Switching to real WorkOS
 
-The API, the sync proxy, the web apps and the CLI talk to `humanlayer-auth` only because their
+The API, the sync proxy, the web apps and the CLI talk to `human-flare-auth` only because their
 WorkOS host and client id point at it. To use a WorkOS tenant instead **(not verified)**:
 
 1. In WorkOS, create the client, allow the redirect URIs (`APP_ORIGIN`, `CLOUD_ORIGIN`, and the
@@ -506,7 +506,7 @@ WorkOS host and client id point at it. To use a WorkOS tenant instead **(not ver
    `WORKOS_API_KEY`, `WORKOS_WEBHOOK_SECRET`, and point the WorkOS webhook at
    `<API_ORIGIN>/webhooks/workos`.
 3. `bun run cloudflare:deploy`. This redeploys the API and proxy with the new values, rebuilds the
-   web apps and republishes the CLI with the WorkOS origin and client id. `humanlayer-auth` stays
+   web apps and republishes the CLI with the WorkOS origin and client id. `human-flare-auth` stays
    deployed but unused.
 
 Users, organizations and memberships are not migrated between the two: ids differ, and
@@ -556,25 +556,25 @@ no Stripe customer.
   pass them on.
 - **Sentry is a no-op on Workers.** The Sentry calls are shimmed; errors are only in Workers Logs.
   `SENTRY_DSN` is accepted but unused by the Workers.
-- **Long background LLM jobs run on a Queue** (`humanlayer-background`) instead of in-process as
+- **Long background LLM jobs run on a Queue** (`human-flare-background`) instead of in-process as
   on Node: post-response work that can outlive a request (LLM titles and next-step extraction,
   delayed GitHub merge-state refresh) is consumed by the API Worker in batches of up to 4, with
-  three retries before the dead-letter queue `humanlayer-background-dlq`. The LLM jobs only do
+  three retries before the dead-letter queue `human-flare-background-dlq`. The LLM jobs only do
   anything when the AI provider keys are set.
 - **Electric runs as one container on ephemeral disk.** There is a single instance (it holds the
   replication slot and an advisory lock), sized `basic` (1/4 vCPU, 1 GiB). It sleeps 30 minutes
   after the last request; the next start pulls the image, boots, and rebuilds every shape from
   Postgres, so the first sync after an idle period takes tens of seconds and clients refetch their
-  shapes. Deploying `humanlayer-electric` stops the running container: observed on every
+  shapes. Deploying `human-flare-electric` stops the running container: observed on every
   redeploy, the container instance and Electric's replication session ended within about a minute
   of the deploy (the container application itself is unchanged). Right after a cold start Electric
   can answer the first shape requests with 503 "Snapshot timed out while waiting for a table
-  lock"; the cause was not investigated. The `humanlayer-electric` Worker retries a 503 up to four
+  lock"; the cause was not investigated. The `human-flare-electric` Worker retries a 503 up to four
   times, two seconds apart, before passing it on, so clients see a slow first request rather than
   an error: with that in place, the first sync check against a cold container passed in 38 seconds
   (8.5 seconds warm). Large
   workspaces may need `standard-1` (`apps/cf-electric/wrangler.jsonc`).
-- **Deploying `humanlayer-hosts` probably restarts running Cloudflare cloud hosts** **(not
+- **Deploying `human-flare-hosts` probably restarts running Cloudflare cloud hosts** **(not
   verified)**: each host's container belongs to a Durable Object, and the Electric container
   (same mechanism) stops on every deploy. The host watchdog restarts and re-bootstraps a stopped
   host from its stored inputs, so the daemon should come back after a short outage. Avoid
@@ -582,7 +582,7 @@ no Stripe customer.
 - **The desktop apps are not ported.** The Electron and Tauri apps and their auto-updater
   (`apps/riptide-electron`, `apps/riptide-native`, `apps/updater-server`) were neither changed nor
   tested against this backend. Use the web app and the CLI.
-- **The cloud host reconcile job exists only in the Cloudflare cron Worker** (`humanlayer-jobs`).
+- **The cloud host reconcile job exists only in the Cloudflare cron Worker** (`human-flare-jobs`).
   A Node/AWS deployment of this code has no equivalent; there, expired hosts are not reconciled.
 - **Cloud host size is fixed per deploy on Cloudflare** (`standard-2`), and per template on E2B;
   only Daytona honours the size picker.

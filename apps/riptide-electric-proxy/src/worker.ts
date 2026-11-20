@@ -1,5 +1,5 @@
 /**
- * Cloudflare Worker entrypoint (`humanlayer-sync`). The Node entrypoint (index.ts) stays untouched.
+ * Cloudflare Worker entrypoint (`human-flare-sync`). The Node entrypoint (index.ts) stays untouched.
  *
  * Same Hono app as Node (createApp), with Worker replacements for the Node-only pieces:
  * - upstream HTTP goes over the ELECTRIC / STREAMS service bindings (worker/binding-fetch.ts);
@@ -25,9 +25,9 @@ import { createWorkerAppRuntime, makeWorkerAppLayer } from './worker/runtime'
 
 /** Structural subset of the Worker bindings this entrypoint uses (no global workers-types needed). */
 export type WorkerEnv = {
-	/** Electric 1.7.x behind the `humanlayer-electric` Worker. Optional so the Worker can boot without it. */
+	/** Electric 1.7.x behind the `human-flare-electric` Worker. Optional so the Worker can boot without it. */
 	ELECTRIC?: ServiceBinding
-	/** Durable Streams behind the `humanlayer-streams` Worker. Optional for the same reason. */
+	/** Durable Streams behind the `human-flare-streams` Worker. Optional for the same reason. */
 	STREAMS?: ServiceBinding
 	HYPERDRIVE: { connectionString: string }
 
@@ -43,8 +43,8 @@ export type WorkerEnv = {
 	LOG_LEVEL?: string
 }
 
-const DEFAULT_ELECTRIC_SHAPE_URL = 'http://humanlayer-electric/v1/shape'
-const DEFAULT_DURABLE_STREAMS_ORIGIN = 'http://humanlayer-streams'
+const DEFAULT_ELECTRIC_SHAPE_URL = 'http://human-flare-electric/v1/shape'
+const DEFAULT_DURABLE_STREAMS_ORIGIN = 'http://human-flare-streams'
 
 function buildApp(env: WorkerEnv) {
 	const electricShapeUrl = env.ELECTRIC_SHAPE_URL || DEFAULT_ELECTRIC_SHAPE_URL

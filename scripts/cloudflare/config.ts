@@ -12,7 +12,7 @@
  * - Every `wrangler` invocation that talks to Cloudflare uses the rendered file: the deploy script,
  *   and the package scripts through scripts/cloudflare/wrangler.ts.
  *
- * Origins default to `https://humanlayer-<name>.<WORKERS_SUBDOMAIN>.workers.dev`; each one can be
+ * Origins default to `https://human-flare-<name>.<WORKERS_SUBDOMAIN>.workers.dev`; each one can be
  * overridden (`API_ORIGIN=https://api.example.com`), for custom domains.
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
@@ -25,7 +25,7 @@ export const EXAMPLE_ENV_FILE = join(ROOT, '.env.cloudflare.example')
 export const WRANGLER = join(ROOT, 'node_modules/.bin/wrangler')
 export const RENDERED_CONFIG_NAME = 'wrangler.rendered.json'
 
-/** Public OAuth client id of the humanlayer-auth Worker (apps/cf-auth). Not deployment-specific. */
+/** Public OAuth client id of the human-flare-auth Worker (apps/cf-auth). Not deployment-specific. */
 export const AUTH_CLIENT_ID = 'client_humanlayer_cloudflare'
 
 export class ConfigError extends Error {}
@@ -87,13 +87,13 @@ export type OriginName = keyof typeof ORIGIN_KEYS
 export type Origins = Record<OriginName, string>
 
 const WORKER_FOR_ORIGIN: Record<OriginName, string> = {
-	api: 'humanlayer-api',
-	sync: 'humanlayer-sync',
-	app: 'humanlayer-app',
-	cloud: 'humanlayer-cloud',
-	docs: 'humanlayer-docs',
-	auth: 'humanlayer-auth',
-	hosts: 'humanlayer-hosts',
+	api: 'human-flare-api',
+	sync: 'human-flare-sync',
+	app: 'human-flare-app',
+	cloud: 'human-flare-cloud',
+	docs: 'human-flare-docs',
+	auth: 'human-flare-auth',
+	hosts: 'human-flare-hosts',
 }
 
 const trimSlash = (value: string) => value.replace(/\/+$/, '')
@@ -115,7 +115,7 @@ export function resolveOrigins(env: Record<string, string | undefined>): Origins
 	return out
 }
 
-/** The WorkOS-compatible auth settings every consumer uses (defaults: the humanlayer-auth Worker). */
+/** The WorkOS-compatible auth settings every consumer uses (defaults: the human-flare-auth Worker). */
 export function resolveAuth(env: Record<string, string | undefined>, origins: Origins = resolveOrigins(env)) {
 	const apiHostname = env.WORKOS_API_HOSTNAME?.trim() || new URL(origins.auth).host
 	const https = env.WORKOS_API_HTTPS?.trim() || ''
@@ -129,7 +129,7 @@ export function resolveAuth(env: Record<string, string | undefined>, origins: Or
 		/** Origin of the WorkOS-compatible API, e.g. for the CLI's device login. */
 		apiOrigin,
 		redirectUri: env.WORKOS_REDIRECT_URI?.trim() || origins.app,
-		/** Management API key; defaults to the humanlayer-auth Worker's API key. */
+		/** Management API key; defaults to the human-flare-auth Worker's API key. */
 		apiKey: env.WORKOS_API_KEY || env.HUMANLAYER_AUTH_API_KEY || '',
 		webhookSecret: env.WORKOS_WEBHOOK_SECRET || env.HUMANLAYER_AUTH_WEBHOOK_SECRET || '',
 	}

@@ -1,5 +1,5 @@
 /**
- * Cloud host reconcile pass: converge `cloud_hosts` with what the provisioner (`humanlayer-hosts`)
+ * Cloud host reconcile pass: converge `cloud_hosts` with what the provisioner (`human-flare-hosts`)
  * actually runs. Runs every minute after the stale-daemon sweeper.
  *
  * The decision per host is `decideCloudHostAction` (@humanlayer/db/utils/cloud-host-lifecycle),
@@ -231,7 +231,7 @@ export function makeBindingProvisionerClient(env: ProvisionerBindingEnv): Provis
 	if (!binding || !secret) return null
 	const call = async (method: string, path: string) => {
 		// Read-only/destroy calls only; unlike create, the origin of these requests is never used by the provisioner.
-		const response = await binding.fetch(`https://humanlayer-hosts.internal${path}`, {
+		const response = await binding.fetch(`https://human-flare-hosts.internal${path}`, {
 			method,
 			headers: { authorization: `Bearer ${secret}` },
 		})

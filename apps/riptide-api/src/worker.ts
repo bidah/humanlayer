@@ -1,5 +1,5 @@
 /**
- * Cloudflare Workers entry for riptide-api (deployed as `humanlayer-api`, see wrangler.jsonc).
+ * Cloudflare Workers entry for riptide-api (deployed as `human-flare-api`, see wrangler.jsonc).
  *
  * The Node entry (`src/index.ts`) is unchanged and still used for the AWS deployment. Differences
  * here:
@@ -12,7 +12,7 @@
  * - The Effect `ManagedRuntime` is built lazily on first use and reused for the isolate's lifetime;
  *   it holds no sockets of its own (the database is resolved per request).
  * - Durable Streams traffic is routed through the `STREAMS` service binding (platform/streams-fetch.ts).
- * - Post-response work that can outlive `waitUntil` is sent to the `humanlayer-background` queue
+ * - Post-response work that can outlive `waitUntil` is sent to the `human-flare-background` queue
  *   (platform/background-jobs.ts) and consumed by `queue()` below, one request scope per message.
  *
  * `./platform/worker-globals` must stay the first import and a bare side-effect import (import

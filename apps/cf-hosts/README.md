@@ -1,11 +1,11 @@
-# @humanlayer/cf-hosts (Worker `humanlayer-hosts`)
+# @humanlayer/cf-hosts (Worker `human-flare-hosts`)
 
 Provisions **cloud daemon hosts**. Each host is a sandbox on Cloudflare Containers, Daytona or E2B.
 It runs this fork's `humanlayer daemon launch` with a daemon token that the caller mints. The
 service is stateless about ownership. The backend API owns the rows; this Worker only maps
 `(provider, hostId)` to a provider sandbox.
 
-Deployed at `https://humanlayer-hosts.<WORKERS_SUBDOMAIN>.workers.dev` (or `HOSTS_ORIGIN`) by `bun run cloudflare:deploy`; see [CLOUDFLARE.md](../../CLOUDFLARE.md).
+Deployed at `https://human-flare-hosts.<WORKERS_SUBDOMAIN>.workers.dev` (or `HOSTS_ORIGIN`) by `bun run cloudflare:deploy`; see [CLOUDFLARE.md](../../CLOUDFLARE.md).
 
 This README is the contract that the API integration codes against.
 
@@ -18,8 +18,8 @@ response is `401 {"error":{"code":"unauthorized",...}}`.
 `/health` and `/cli/*` are public.
 
 **Calling through a service binding.** A caller may reach this Worker through a Cloudflare service
-binding instead of the public URL (the API and `humanlayer-jobs` bind it as `HOSTS`). Address those
-requests to the public origin (`https://humanlayer-hosts.<subdomain>.workers.dev/v1/...`) anyway:
+binding instead of the public URL (the API and `human-flare-jobs` bind it as `HOSTS`). Address those
+requests to the public origin (`https://human-flare-hosts.<subdomain>.workers.dev/v1/...`) anyway:
 `POST /v1/hosts` and `.../bootstrap` tell the new host to download the CLI from the origin of the
 request they received, so a made-up hostname would end up in the host's bootstrap and the download
 would fail (`download of humanlayer CLI failed`).

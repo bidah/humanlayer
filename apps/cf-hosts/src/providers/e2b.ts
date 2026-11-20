@@ -235,7 +235,7 @@ export class E2BProvider implements CloudHostProvider {
 		const t0 = Date.now()
 		const { data } = await this.api<E2BCreated>('POST', '/v2/sandboxes', {
 			templateID: this.cfg.template ?? 'base',
-			metadata: { ...input.labels, app: 'humanlayer', hostId: input.hostId, managedBy: 'humanlayer-hosts' },
+			metadata: { ...input.labels, app: 'humanlayer', hostId: input.hostId, managedBy: 'human-flare-hosts' },
 			timeout: input.ttlMinutes * 60,
 			allow_internet_access: true,
 		})

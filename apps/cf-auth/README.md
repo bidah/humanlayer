@@ -1,6 +1,6 @@
 # @humanlayer/cf-auth: a WorkOS-compatible auth service
 
-This package is the Cloudflare Worker `humanlayer-auth` (`https://humanlayer-auth.<WORKERS_SUBDOMAIN>.workers.dev` unless `AUTH_ORIGIN` overrides it), backed by the D1 database `humanlayer-auth`. It is deployed with the rest of the stack by `bun run cloudflare:deploy`; see [CLOUDFLARE.md](../../CLOUDFLARE.md).
+This package is the Cloudflare Worker `human-flare-auth` (`https://human-flare-auth.<WORKERS_SUBDOMAIN>.workers.dev` unless `AUTH_ORIGIN` overrides it), backed by the D1 database `human-flare-auth`. It is deployed with the rest of the stack by `bun run cloudflare:deploy`; see [CLOUDFLARE.md](../../CLOUDFLARE.md).
 
 It implements the part of the WorkOS HTTP API that this repo's SDK calls use:
 
@@ -133,7 +133,7 @@ The deploy script generates these into the repo's gitignored `.env.cloudflare` w
 ```sh
 cd apps/cf-auth
 bun run test                       # starts wrangler dev (workerd + local D1); no Docker or env file needed
-bun run migrate:remote             # apply migrations/ to the D1 database humanlayer-auth
+bun run migrate:remote             # apply migrations/ to the D1 database human-flare-auth
 bun run secrets:generate && bun run secrets:put
 bun run deploy                     # renders wrangler.jsonc from .env.cloudflare, then wrangler deploy
 bun run bootstrap -- --email you@example.com --first-name You
@@ -151,9 +151,9 @@ Every seam defaults to real WorkOS when it is unset:
 
 | Consumer | Setting for this service | Setting for real WorkOS |
 |---|---|---|
-| `riptide-ui` and `riptide-cloud` (build env) | `VITE_PUBLIC_WORKOS_API_HOSTNAME=humanlayer-auth.<WORKERS_SUBDOMAIN>.workers.dev` and `VITE_PUBLIC_WORKOS_CLIENT_ID=client_humanlayer_cloudflare`. Optionally `VITE_PUBLIC_WORKOS_API_HTTPS=false` and `VITE_PUBLIC_WORKOS_API_PORT=8787` for a local `wrangler dev`. | Leave the hostname unset and use the WorkOS client id. |
-| `riptide-api` and `riptide-electric-proxy` (runtime env) | `WORKOS_API_HOSTNAME=humanlayer-auth.<WORKERS_SUBDOMAIN>.workers.dev`, `WORKOS_API_KEY=<HUMANLAYER_AUTH_API_KEY>`, `WORKOS_CLIENT_ID=client_humanlayer_cloudflare`. The API also needs `WORKOS_WEBHOOK_SECRET` if `WEBHOOK_URL` is set. | Leave `WORKOS_API_HOSTNAME` unset and use the real key and client id. |
-| CLI | Build env `WORKOS_API_ORIGIN=https://humanlayer-auth…` (Bun macro), or `HUMANLAYER_WORKOS_URL` at runtime, together with the `*_WORKOS_CLIENT_ID` macros. | Leave both unset to use `https://api.workos.com`. |
+| `riptide-ui` and `riptide-cloud` (build env) | `VITE_PUBLIC_WORKOS_API_HOSTNAME=human-flare-auth.<WORKERS_SUBDOMAIN>.workers.dev` and `VITE_PUBLIC_WORKOS_CLIENT_ID=client_humanlayer_cloudflare`. Optionally `VITE_PUBLIC_WORKOS_API_HTTPS=false` and `VITE_PUBLIC_WORKOS_API_PORT=8787` for a local `wrangler dev`. | Leave the hostname unset and use the WorkOS client id. |
+| `riptide-api` and `riptide-electric-proxy` (runtime env) | `WORKOS_API_HOSTNAME=human-flare-auth.<WORKERS_SUBDOMAIN>.workers.dev`, `WORKOS_API_KEY=<HUMANLAYER_AUTH_API_KEY>`, `WORKOS_CLIENT_ID=client_humanlayer_cloudflare`. The API also needs `WORKOS_WEBHOOK_SECRET` if `WEBHOOK_URL` is set. | Leave `WORKOS_API_HOSTNAME` unset and use the real key and client id. |
+| CLI | Build env `WORKOS_API_ORIGIN=https://human-flare-auth…` (Bun macro), or `HUMANLAYER_WORKOS_URL` at runtime, together with the `*_WORKOS_CLIENT_ID` macros. | Leave both unset to use `https://api.workos.com`. |
 | Session SDK and plugins | Set `workos` in a channel of `HUMANLAYER_CHANNELS` at build time, or `HUMANLAYER_WORKOS_URL` at runtime, together with `clientId` or `HUMANLAYER_WORKOS_CLIENT_ID`. | Leave them unset. |
 
 Users, organizations and memberships are not migrated between this service and WorkOS. Their ids are different, and `organizations.workos_organization_id` in Postgres points at whichever service created the organization.

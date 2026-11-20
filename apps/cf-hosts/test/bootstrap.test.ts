@@ -20,7 +20,7 @@ import { ANTHROPIC_KEY, HOST_ID, TOKEN } from './helpers'
 const params = {
 	hostId: HOST_ID,
 	provider: 'daytona' as const,
-	cliUrl: 'https://humanlayer-hosts.example.workers.dev/cli/abc123/humanlayer-linux-x64',
+	cliUrl: 'https://human-flare-hosts.example.workers.dev/cli/abc123/humanlayer-linux-x64',
 	cliSha256: 'b'.repeat(64),
 	cliVersion: 'abc123',
 }

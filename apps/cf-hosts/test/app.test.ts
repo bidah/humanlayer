@@ -58,7 +58,7 @@ function setup(env: Partial<Env> = {}) {
 	const app = createApp({ deps: { cloudflare: cf.deps }, bucket: fakeBucket() })
 	const req = (method: string, path: string, body?: unknown, auth: string | null = `Bearer ${SECRET}`) =>
 		app.request(
-			`https://humanlayer-hosts.test${path}`,
+			`https://human-flare-hosts.test${path}`,
 			{
 				method,
 				headers: {
@@ -125,7 +125,7 @@ describe('auth', () => {
 		})
 		const app = createApp({ deps: { cloudflare: fakeCloudflare().deps }, bucket })
 		const req = (method: string, path: string, _body?: unknown, _auth?: null) =>
-			app.request(`https://humanlayer-hosts.test${path}`, { method }, { INTERNAL_SERVICE_SECRET: SECRET } as Env)
+			app.request(`https://human-flare-hosts.test${path}`, { method }, { INTERNAL_SERVICE_SECRET: SECRET } as Env)
 		const bin = await req('GET', '/cli/latest/humanlayer-darwin-arm64', undefined, null)
 		expect(bin.status).toBe(200)
 		expect(bin.headers.get('x-checksum-sha256')).toBe(darwin.sha256)
@@ -153,7 +153,7 @@ describe('provider selection', () => {
 			daemonToken: TOKEN,
 			ttlMinutes: 1440,
 			cli: {
-				url: `https://humanlayer-hosts.test/cli/${MANIFEST.version}/humanlayer-linux-x64`,
+				url: `https://human-flare-hosts.test/cli/${MANIFEST.version}/humanlayer-linux-x64`,
 				sha256: MANIFEST.sha256,
 			},
 		})
@@ -218,7 +218,7 @@ describe('provider selection', () => {
 async function app_request_raw() {
 	const { app } = setup()
 	const res = await app.request(
-		'https://humanlayer-hosts.test/v1/hosts',
+		'https://human-flare-hosts.test/v1/hosts',
 		{
 			method: 'POST',
 			headers: { authorization: `Bearer ${SECRET}`, 'content-type': 'application/json' },

@@ -2,7 +2,7 @@ export interface Env {
 	DB: D1Database
 	/** Public client id the SDKs send as `client_id` (WORKOS_CLIENT_ID / VITE_PUBLIC_WORKOS_CLIENT_ID). */
 	CLIENT_ID: string
-	/** Externally visible origin of this Worker, e.g. https://humanlayer-auth.example.workers.dev. Used for `iss` and links. */
+	/** Externally visible origin of this Worker, e.g. https://human-flare-auth.example.workers.dev. Used for `iss` and links. */
 	PUBLIC_URL?: string
 	/** Comma/whitespace separated redirect allowlist. Entries are exact URIs, or `<origin>/*` for any path on that origin. */
 	ALLOWED_REDIRECT_URIS: string

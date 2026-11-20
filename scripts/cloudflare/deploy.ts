@@ -129,33 +129,33 @@ const API_OPTIONAL_SECRETS = [
  * jobs -> hosts). The sites only need the origins.
  */
 const TARGETS: readonly Target[] = [
-	{ name: 'streams', worker: 'humanlayer-streams', dir: 'apps/cf-durable-streams' },
-	{ name: 'electric', worker: 'humanlayer-electric', dir: 'apps/cf-electric' },
+	{ name: 'streams', worker: 'human-flare-streams', dir: 'apps/cf-durable-streams' },
+	{ name: 'electric', worker: 'human-flare-electric', dir: 'apps/cf-electric' },
 	{
 		name: 'hosts',
-		worker: 'humanlayer-hosts',
+		worker: 'human-flare-hosts',
 		dir: 'apps/cf-hosts',
 		optionalSecrets: ['DAYTONA_API_KEY', 'E2B_API_KEY', 'E2B_TEMPLATE'],
 	},
-	{ name: 'auth', worker: 'humanlayer-auth', dir: 'apps/cf-auth', optionalSecrets: ['SIGNING_KEY_JWK_PREVIOUS'] },
-	{ name: 'api', worker: 'humanlayer-api', dir: 'apps/riptide-api', optionalSecrets: API_OPTIONAL_SECRETS },
-	{ name: 'sync', worker: 'humanlayer-sync', dir: 'apps/riptide-electric-proxy', optionalSecrets: ['SENTRY_DSN'] },
-	{ name: 'jobs', worker: 'humanlayer-jobs', dir: 'apps/cf-jobs' },
+	{ name: 'auth', worker: 'human-flare-auth', dir: 'apps/cf-auth', optionalSecrets: ['SIGNING_KEY_JWK_PREVIOUS'] },
+	{ name: 'api', worker: 'human-flare-api', dir: 'apps/riptide-api', optionalSecrets: API_OPTIONAL_SECRETS },
+	{ name: 'sync', worker: 'human-flare-sync', dir: 'apps/riptide-electric-proxy', optionalSecrets: ['SENTRY_DSN'] },
+	{ name: 'jobs', worker: 'human-flare-jobs', dir: 'apps/cf-jobs' },
 	// riptide-cloud before riptide-ui, as in the reference deploy order.
-	{ name: 'cloud', worker: 'humanlayer-cloud', dir: 'apps/riptide-cloud', site: 'cloud' },
-	{ name: 'app', worker: 'humanlayer-app', dir: 'apps/riptide-ui', site: 'app' },
-	{ name: 'docs', worker: 'humanlayer-docs', dir: 'apps/docs', site: 'docs' },
+	{ name: 'cloud', worker: 'human-flare-cloud', dir: 'apps/riptide-cloud', site: 'cloud' },
+	{ name: 'app', worker: 'human-flare-app', dir: 'apps/riptide-ui', site: 'app' },
+	{ name: 'docs', worker: 'human-flare-docs', dir: 'apps/docs', site: 'docs' },
 ]
 
 const ALIASES: Record<string, TargetName[]> = { sites: ['cloud', 'app', 'docs'] }
 
 /** Account resources of this stack. Only these names are ever looked up or created. */
 const RESOURCES = {
-	hyperdrive: 'humanlayer-db',
-	kv: 'humanlayer-billing-cache',
-	r2: 'humanlayer-artifacts',
-	d1: 'humanlayer-auth',
-	queues: ['humanlayer-background-dlq', 'humanlayer-background'],
+	hyperdrive: 'human-flare-db',
+	kv: 'human-flare-billing-cache',
+	r2: 'human-flare-artifacts',
+	d1: 'human-flare-auth',
+	queues: ['human-flare-background-dlq', 'human-flare-background'],
 } as const
 
 /** Placeholder ids used only to render configs for `--dry-run` when a resource does not exist yet. */
@@ -517,7 +517,7 @@ async function ensureD1(dryRun: boolean) {
 }
 
 async function ensureQueues(dryRun: boolean) {
-	// The dead-letter queue first: the consumer config of humanlayer-background references it.
+	// The dead-letter queue first: the consumer config of human-flare-background references it.
 	for (const queue of RESOURCES.queues) {
 		const info = await wrangler(['queues', 'info', queue], { allowFailure: true })
 		if (info.code === 0) log(`    queue       ${queue}: exists`)
@@ -594,53 +594,53 @@ const GENERATED_SECRETS: GeneratedSecret[] = [
 		keys: ['RIPTIDE_DAEMON_TOKEN_PRIVATE_KEY', 'RIPTIDE_DAEMON_TOKEN_PUBLIC_KEY'],
 		make: rsaPemPairBase64,
 		usedBy: [
-			['humanlayer-api', 'RIPTIDE_DAEMON_TOKEN_PRIVATE_KEY'],
-			['humanlayer-api', 'RIPTIDE_DAEMON_TOKEN_PUBLIC_KEY'],
-			['humanlayer-sync', 'RIPTIDE_DAEMON_TOKEN_PUBLIC_KEY'],
+			['human-flare-api', 'RIPTIDE_DAEMON_TOKEN_PRIVATE_KEY'],
+			['human-flare-api', 'RIPTIDE_DAEMON_TOKEN_PUBLIC_KEY'],
+			['human-flare-sync', 'RIPTIDE_DAEMON_TOKEN_PUBLIC_KEY'],
 		],
 	},
 	{
 		keys: ['ELECTRIC_SECRET'],
 		make: () => [hex(32)],
 		usedBy: [
-			['humanlayer-electric', 'ELECTRIC_SECRET'],
-			['humanlayer-sync', 'ELECTRIC_SECRET'],
+			['human-flare-electric', 'ELECTRIC_SECRET'],
+			['human-flare-sync', 'ELECTRIC_SECRET'],
 		],
 	},
 	{
 		keys: ['INTERNAL_SERVICE_SECRET'],
 		make: () => [hex(32)],
 		usedBy: [
-			['humanlayer-api', 'INTERNAL_SERVICE_SECRET'],
-			['humanlayer-electric', 'INTERNAL_SERVICE_SECRET'],
-			['humanlayer-jobs', 'INTERNAL_SERVICE_SECRET'],
-			['humanlayer-hosts', 'INTERNAL_SERVICE_SECRET'],
+			['human-flare-api', 'INTERNAL_SERVICE_SECRET'],
+			['human-flare-electric', 'INTERNAL_SERVICE_SECRET'],
+			['human-flare-jobs', 'INTERNAL_SERVICE_SECRET'],
+			['human-flare-hosts', 'INTERNAL_SERVICE_SECRET'],
 		],
 	},
 	{
 		keys: ['ARTIFACT_URL_SIGNING_SECRET'],
 		make: () => [hex(32)],
-		usedBy: [['humanlayer-api', 'ARTIFACT_URL_SIGNING_SECRET']],
+		usedBy: [['human-flare-api', 'ARTIFACT_URL_SIGNING_SECRET']],
 	},
 	{
 		keys: ['HUMANLAYER_AUTH_API_KEY'],
 		make: () => [`sk_hl_${base64url(32)}`],
 		usedBy: [
-			['humanlayer-auth', 'API_KEY'],
-			['humanlayer-api', 'WORKOS_API_KEY'],
+			['human-flare-auth', 'API_KEY'],
+			['human-flare-api', 'WORKOS_API_KEY'],
 		],
 	},
 	{
 		keys: ['HUMANLAYER_AUTH_SIGNING_KEY_JWK'],
 		make: async () => [await signingJwk()],
-		usedBy: [['humanlayer-auth', 'SIGNING_KEY_JWK']],
+		usedBy: [['human-flare-auth', 'SIGNING_KEY_JWK']],
 	},
 	{
 		keys: ['HUMANLAYER_AUTH_WEBHOOK_SECRET'],
 		make: () => [base64url(32)],
 		usedBy: [
-			['humanlayer-auth', 'WEBHOOK_SECRET'],
-			['humanlayer-api', 'WORKOS_WEBHOOK_SECRET'],
+			['human-flare-auth', 'WEBHOOK_SECRET'],
+			['human-flare-api', 'WORKOS_WEBHOOK_SECRET'],
 		],
 	},
 ]

@@ -1,4 +1,4 @@
-// Scripted AuthKit-style sign-in against the humanlayer-auth Worker (PKCE authorization-code flow).
+// Scripted AuthKit-style sign-in against the human-flare-auth Worker (PKCE authorization-code flow).
 // Used by the end-to-end checks in this directory; credentials come from the gitignored bootstrap file
 // written by apps/cf-auth/scripts/bootstrap.ts (override the path with BOOTSTRAP_CREDENTIALS).
 import { APP, AUTH, CLIENT_ID } from './env'
